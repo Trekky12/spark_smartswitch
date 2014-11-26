@@ -84,6 +84,18 @@ This will build your main application (`core-firmware/src/application.cpp`) and 
 
 *For example:* `D:\Spark\core-firmware\build [master]> make`
 
+
+#### Build with the spark-cli
+    make && spark flash COREID core-firmware.bin 
+
+
+#### Linux / Mac serial connection
+
+The following little shell script keeps a screen ready as soon as /dev/tty.usbmodemXXXXX becomes available.
+
+    while true; do [ -e /dev/tty.usbmodemXXXXXX ] && screen -h 500 /dev/tty.usbmodemXXXXXX ; sleep 5; reset; echo "No tty available"; done 
+
+
 ##### Common Errors
 
 * `arm-none-eabi-gcc` and other required gcc/arm binaries not in the PATH.
