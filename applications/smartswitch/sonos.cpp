@@ -13,7 +13,9 @@
 
 
 /* Ethernet control */
-TCPClient       client; //(sonosip, 1400
+unsigned long last_sent=0L;
+TCPClient       client; 
+
 
 // response buffer
 char buffer[1024];
@@ -34,6 +36,9 @@ static const uint16_t TIMEOUT = 5000; // Allow maximum 5s between data packets.
 //#define SONOS_LOGING
 
 byte sonosip[] = { 10, 0, 6, 118 };
+
+int r=0;
+
 
 
 
@@ -201,33 +206,41 @@ void
   SONOSClient::mute(bool muteit)
 {
   
-  makeMuteRequest(request, muteit);
-  makeHeader(header, sonosip, strlen(request), "SetMute");
-  
-	if (client.connect(sonosip, 1400)) {  
-  
-    Serial.println("Connected");
-  
-    client.write((const uint8_t *)header, strlen(header));
-  
-    // we dont care about anwsers to the header
-    // so we flush the client prior sending our data
-    // This seems to be very important
-    client.flush();
+  if(millis()-last_sent>80) {
+
+  if (client.connect(sonosip, 1400)) {  
+   
+      uint32_t startTime = millis();
+     
+      makeHeader(request, sonosip, 314, "SetMute");
+      makeMuteRequest(request, muteit);
+
+      client.write((const uint8_t *)request, strlen(request));
+      client.flush();
+    
+      while(!client.available() && (millis() - startTime) < 5000){
+          SPARK_WLAN_Loop();
+      };
     
     
-    client.write((const uint8_t *)request, strlen(request));
+      while(client.available()) {
+          r = client.read((uint8_t*) buffer, 1023);
+          if (r == -1) break;
+      }
     
-    while(client.available()) {
-          client.flush();
-          //or read the data with client.read();
-    }
-    
-    client.stop();
+      client.flush();
+      client.stop();
   
   } else {
-    Serial.println("Unable to connnect");
+      // there seems to be something left from a previous connection
+      client.flush();
+      client.stop();
   }
+  
+  last_sent=millis();
+
+  }
+
 
 
 

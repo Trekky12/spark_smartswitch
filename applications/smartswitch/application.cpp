@@ -6,6 +6,7 @@
 #include "MCP23017.h"
 #include "SparkIntervalTimer.h"
 #include "QueueList.h"
+#include "Sonos.h"
 
 
 // Basic pin reading and pullup test for the MCP23017 I/O expander
@@ -23,13 +24,20 @@
 // Insert firearm metaphor here
 /* The Spark Core's manual mode puts everything in your hands. 
 This mode gives you a lot of rope to hang yourself with, so tread cautiously. */
-//SYSTEM_MODE(SEMI_AUTOMATIC);
+SYSTEM_MODE(SEMI_AUTOMATIC);
 
 WS2812B leds;
+
 Adafruit_MCP23017 mcp;
 
-
 IntervalTimer myTimer;
+
+SONOSClient mySonos;
+
+unsigned long lastSent = 0;
+bool currentMute = FALSE;
+
+int changeCount =0;
 
 
 
@@ -37,18 +45,22 @@ IntervalTimer myTimer;
 // DEFINES for selective debugging (most done via Serial console)
 // #define INT_DEBUG 1
 // #define QUEUE_DEBUG 1
+// #define SERIAL_DEBUG
 
 #define BTN_UP 0
 #define BTN_DOWN 1
 #define BTN_T_HOLD 1000
 #define BTN_T_DOUBLE 200
+#define BTN_COUNT 6
+
+
+
 
 // millis of the last btn up
-unsigned long btn_last_up = 0UL;
+unsigned long btn_last_up   [BTN_COUNT] = {0UL};
 
 // millis of the last btn down
-unsigned long btn_last_down = 0UL;
-
+unsigned long btn_last_down [BTN_COUNT] = {0UL};
 
 // Interrupts from the MCP will be handled by this PIN
 byte SparkIntPIN = D3;
@@ -66,16 +78,9 @@ volatile boolean inInterrupt = false;
 volatile boolean serviceint = false;
 
 
-// message structure for events (button presses)
 
-typedef struct { /* deklariert den Strukturtyp person */
-    uint8_t btn_id;
-    uint8_t btn_val;
-    unsigned long btn_time;
-} t_interrupt_event;
 
 // Define eventtypes and buttons
-
 // btn can be one specific button or a sequence of buttons
 
 enum btn {
@@ -83,10 +88,10 @@ enum btn {
 };
 
 // btn_event_type can be based one one button or a specific sequence
-
 enum btn_event_type {
-    BTN_SINGLE, BTN_DOUBLE, BTN_TRIPLE, SEQUENCE_1, SEQUENCE_2
+    BTN_SINGLE, BTN_DOUBLE, BTN_TRIPLE, BTN_HOLD, SEQUENCE_1, SEQUENCE_2
 };
+
 
 typedef struct {
     uint8_t btn;
@@ -94,8 +99,6 @@ typedef struct {
 } t_btn_event;
 
 
-// create a queue of t_interrupt_events.
-QueueList <t_interrupt_event> interrupt_queue;
 
 
 // create a queue of t_btn_events.
@@ -113,20 +116,14 @@ void connect() {
 
 
 
-// void printQcount() {
-//
-//   Serial.print("Current INTERRUPT_QUEUE_LEN: ");
-//   Serial.println(interrupt_queue.count());
-//
-// }
 
 void handleButtonINT() {
     inInterrupt = true;
-
-    uint8_t pin = mcp.getLastInterruptPin();
-    uint8_t val = mcp.getLastInterruptPinValue();
-
-
+    
+    uint8_t pin=mcp.getLastInterruptPin();
+    uint8_t val=mcp.getLastInterruptPinValue();
+    
+    
     //NOTE: These next 2 will clear the interrupt.  The problem is that if the user
     //has _not_ released the button yet, it will simply re-interrupt again.  We
     //were seeing this every 30-60ms (about the time it takes for the user to
@@ -134,88 +131,87 @@ void handleButtonINT() {
     //if the user holds down the button it can continue to interrupt (as they
     //may intend) but at a reasonable rate.
     //I found a quick depress to be 30ms and a slow depress to be about 70ms.   
-
+    
     //intcapAB = mcp.getInterruptCaptureAB();    //this will clear the MCP interrupt
     //valAB = mcp.readGPIOAB();                  //this will clear the MCP interrupt
     mcp.readGPIOAB();
-
-    // TODO:  catch cases when interrupt happended but no button was pressed
-    //        do they exist? how can we recognize them? 
-    //        255 as value ? no "lastInterruptPin" ?
-
-
-    /*t_interrupt_event _event;
-          
-    // copy values to the struct
-    _event.btn_id  = pin;
-    _event.btn_val = val;
-    _event.btn_time = millis();
-      
-    // push it to the interrupt_queue
-    interrupt_queue.push(_event);
-     */
-    // get the spark back to the cloud
-    if (pin == BTN_1) {
-        //Serial.println("Connecting to the cloud");
-        //connectToCloud = true;
-    }
-
+    
     // relevant PIN
-    if (pin >= 1 && pin <= 16) {
-        unsigned long now = millis();
-
-
-
-        // button release
-        if (val == BTN_UP) {
-
-            // Serial.print("now-up: ");
-            // Serial.println((now-btn_last_up));
-            //
-            // Serial.print("now-down: ");
-            // Serial.println((now-btn_last_down));
-
-            // double click bedingung
-            if ((now - btn_last_up < BTN_T_DOUBLE) && (now - btn_last_down < BTN_T_HOLD)) {
-                t_btn_event _btn_event;
-                _btn_event.btn = pin;
-                _btn_event.event = BTN_DOUBLE;
-                btn_event_queue.push(_btn_event);
-            } else {
-                t_btn_event _btn_event;
-                _btn_event.btn = pin;
-                _btn_event.event = BTN_SINGLE;
-                btn_event_queue.push(_btn_event);
-            }
-
-
-            btn_last_up = millis();
-        }
-
-            // button press	
-        else if (val == BTN_DOWN) {
-            btn_last_down = millis();
-        }
-
-            // unrecognized button event
-        else {
-            //DEBUG
-        }
-
-    }
-
+    if (pin >= 1 && pin <=16) 
+    {
+      // current time, so we don't have to call millis() all the time
+  	  unsigned long now = millis();
+      // index in array starts at zero
+      int idx = pin - 1;
+    
+      // button release
+      if(val == BTN_UP) 
+      {
+          // hold condition
+          if (now-btn_last_down[idx] >= BTN_T_HOLD)
+          {
+            t_btn_event _btn_event;
+            _btn_event.btn = pin;
+            _btn_event.event = BTN_HOLD;
+            btn_event_queue.push(_btn_event);
+          }
+        	// double click condition
+        	else if ((now-btn_last_up[idx]<BTN_T_DOUBLE) && (now-btn_last_down[idx] < BTN_T_HOLD)) {
+        	  t_btn_event _btn_event;
+        	  _btn_event.btn = pin;
+        	  _btn_event.event = BTN_DOUBLE;
+        	  btn_event_queue.push(_btn_event);
+        	} 
+          // otherwise we have seen a single click
+          else 
+          {
+            t_btn_event _btn_event;
+            _btn_event.btn = pin;
+            _btn_event.event = BTN_SINGLE;
+            btn_event_queue.push(_btn_event);
+          }
+          btn_last_up[idx] = millis();
+      }
+      // button press	
+      else if (val == BTN_DOWN) 
+      {
+          btn_last_down[idx] = millis();
+      } 
+      // unrecognized button event
+      else 
+      {
+        //DEBUG
+      }
+	  }
     serviceint = true;
     pressCount = pressCount + 1;
     inInterrupt = false;
 }
 
+
+
+
+
+
+
+
 void setup() {
 
-    Serial.begin(9600);
+  delay(1000);
 
-    //  while(!Serial.available())  // Wait here until the user presses ENTER 
-    //    SPARK_WLAN_Loop();        // in the Serial Terminal. Call the BG Tasks
-    // while we are hanging around doing nothing.
+#ifdef SERIAL_DEBUG
+    Serial.begin(9600);
+    
+    while(!Serial.available()) {  // Wait here until the user presses ENTER 
+          SPARK_WLAN_Loop();        // in the Serial Terminal. Call the BG Tasks
+    }
+#endif /* SERIAL_DEBUG */
+  
+  
+  
+     WiFi.connect();
+
+     while (!WiFi.ready()) SPARK_WLAN_Loop();
 
 
     pinMode(SparkIntPIN, INPUT);
@@ -251,8 +247,6 @@ void setup() {
     mcp.setupInterruptPin(BTN_1, CHANGE);
     mcp.setupInterruptPin(BTN_2, CHANGE);
 
-    Serial.println("MCP23017 Interrupt Test");
-
     mcp.readGPIOAB();
 
     inInterrupt = true;
@@ -273,94 +267,99 @@ void loop() {
 
     if (connectToCloud) {
         connect();
+        #ifdef SERIAL_DEBUG
         Serial.println("Connected to the cloud");
+        #endif /* SERIAL DEBUG */
         connectToCloud = false;
     }
 
     if (pressCount > 50) {
+        #ifdef SERIAL_DEBUG
         Serial.println("50 interrupts...");
+        #endif /* SERIAL DEBUG */
         pressCount = 0;
     }
 
     if (serviceint) {
-#ifdef INT_DEBUG
+        #ifdef SERIAL_DEBUG
         Serial.println("=============================");
         Serial.println("Interrupt detected!");
         Serial.println(millis());
-#endif /* INT_DEBUG */
+        #endif /* SERIAL DEBUG */
         serviceint = false;
     }
 
 
-    // if(!inInterrupt) {
-    //       // single press
-    //       if ((now-btn_last_up>BTN_T_DOUBLE) && (now-btn_last_down < BTN_T_HOLD)) {
-    //   //else {
-    //            t_btn_event _btn_event;
-    //        _btn_event.btn = pin;
-    //        _btn_event.event = BTN_SINGLE;
-    //             btn_event_queue.push(_btn_event);
-    //       }
-    // }
-
-
-
     if (!btn_event_queue.isEmpty()) {
-        t_btn_event _btn_event = btn_event_queue.pop();
-
-        if (_btn_event.event == BTN_SINGLE) {
-
-            // warten double click time
-            delay(BTN_T_DOUBLE);
-
-            // nach warten was neues in der queue ?
-            if (!btn_event_queue.isEmpty()) {
-                t_btn_event _btn_next_event = btn_event_queue.peek();
-
-                // nächstes Event für gleichen button ?
-                if (_btn_event.btn == _btn_next_event.btn) {
-                    _btn_event = btn_event_queue.pop();
-                }
+      t_btn_event _btn_event = btn_event_queue.pop();
+      
+      if (_btn_event.event == BTN_SINGLE) {
+        // warten double click time
+        delay(BTN_T_DOUBLE);
+        // we waited for some time, is there something new in the queue?
+        if(!btn_event_queue.isEmpty()) {
+          t_btn_event _btn_next_event = btn_event_queue.peek();
+          // does the new event concern the same button as the current ?
+          // is is the old current event a single click ? This is necessairy so we
+          // don't throw away two following double clicks or something like that
+            if(_btn_event.btn == _btn_next_event.btn && _btn_event.event == BTN_SINGLE) {
+              // we assume the current event was only the first part of a double click
+              // so we skip it and replace it with the new one
+              // the new one will be popped from the queue
+              _btn_event = btn_event_queue.pop();
             }
         }
+      }
+      
+      // interpret the event and fire desired action
+      // TODO shall be sourced out
+      switch(_btn_event.btn) {
+      	case BTN_1: 
+          switch (_btn_event.event) {
+            case BTN_SINGLE:              
+            mySonos.mute(TRUE);
+              
+              break;
+            
+            case BTN_DOUBLE:
 
-        //TODO queue.peek() 
+              break;
+            
+            case BTN_HOLD:
 
+              break;
 
-        if (_btn_event.event == BTN_SINGLE) {
-            digitalWrite(LED, HIGH);
+            default:
+              break;
+          }
+          break;
+      	case BTN_2: 
+          switch (_btn_event.event) {
+            case BTN_SINGLE:
+              mySonos.mute(FALSE);
+              break;
+          
+            case BTN_DOUBLE:
 
-        }
+              break;
+          
+            case BTN_HOLD:
+              //get the spark back to the cloud
+              connectToCloud = true;
+              break;
 
-        if (_btn_event.event == BTN_DOUBLE) {
-            digitalWrite(LED, LOW);
-
-        }
-
-
-
-        Serial.print("Event type: ");
-        Serial.println(_btn_event.event);
-
-
-
-        //
-        // #ifdef QUEUE_DEBUG
-        //       char debug_buff[64];
-        //       sprintf(debug_buff, "POPPED BTN Q - BTN: %d EVENT: %d", _btn_event.btn, _btn_event.event);
-        //       Serial.println(debug_buff);
-        // #endif /* QUEUE_DEBUG */
-        //
-        //       if (_btn_event.event == BTN_SINGLE) {
-        //         switch (_btn_event.btn) {
-        //           case BTN_1:
-        //           Serial.println("BTN1 SINGLE PRESS");
-        //             break;
-        //           case BTN_2:
-        //           Serial.println("BTN2 SINGLE PRESS");
-        //             break;
-        //         }
-        //       }
+            default:
+              break;
+          }
+          break;
+      	default: 
+          ; 
+          break;
+      }
     }
+
+
+
+
 
 }
