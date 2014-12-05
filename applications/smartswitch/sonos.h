@@ -49,6 +49,11 @@ public:
   virtual void sonos_cmd(int cmd);
   virtual void sonos_cmd(int cmd, char *resp1, char *resp2);
   virtual void sonos_setVol(int volToSet);
+  virtual void mute(bool muteit);
+  virtual void getVol();
+  virtual void getMute();
+  virtual void toggleMute();
+  
 
 };
 
