@@ -1,5 +1,5 @@
 #include "sonos.h"
-#include "http_client.h"
+#include "spark_http_client/http_client.h"
 
 /* Enable DEBUG_SONOS for serial debug output */
 //

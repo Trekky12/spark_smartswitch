@@ -1,4 +1,4 @@
-#include "http_client.h"
+#include "spark_http_client/http_client.h"
 
 #define DEBUG_SONOS
 #define REQUEST_LEN 800

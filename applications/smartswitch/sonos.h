@@ -5,7 +5,7 @@
 //#include <stdlib.h>
 #include "spark_wiring_tcpclient.h"
 #include "application.h"
-#include "http_client.h"
+#include "spark_http_client/http_client.h"
 
 
 /*----------------------------------------------------------------------*/
