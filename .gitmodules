@@ -1,3 +1,6 @@
 [submodule "applications/smartswitch/spark_http_client"]
 	path = applications/smartswitch/spark_http_client
 	url = https://github.com/phhe/spark_http_client
+	fetchRecurseSubmodules = true
+	ignore = 
+	update = checkout
