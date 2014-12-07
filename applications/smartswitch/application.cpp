@@ -137,6 +137,7 @@ void handleButtonINT() {
     mcp.readGPIOAB();
     
     // relevant PIN
+    // TODO check if queue has enough free space
     if (pin >= 1 && pin <=16) 
     {
       // current time, so we don't have to call millis() all the time

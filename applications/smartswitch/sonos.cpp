@@ -1,4 +1,5 @@
 #include "sonos.h"
+#include "http_client.h"
 
 /* Enable DEBUG_SONOS for serial debug output */
 //
@@ -15,6 +16,8 @@
 /* Ethernet control */
 unsigned long last_sent=0L;
 TCPClient       client; 
+
+HTTPClient myHttpClient;
 
 
 // response buffer
@@ -121,17 +124,20 @@ void makeHeader( char* header, byte* host, int contentLength, const char* soapac
     
   sprintf(header, "POST /MediaRenderer/RenderingControl/Control HTTP/1.1\r\n");
   strcat(header,  "CONNECTION: close\r\n");
-  strcat(header,  "ACCEPT-ENCODING: gzip\r\n");
+  //strcat(header,  "ACCEPT-ENCODING: gzip\r\n");
   
   snprintf(linebuffer, 85, "HOST: %d.%d.%d.%d:%d\r\n", host[0], host[1], host[2], host[3], __SONOS_PORT);
   strcat(header, linebuffer);
   memset(&linebuffer, 0, sizeof(linebuffer));
   
-  strcat(header,  "USER-AGENT: Linux UPnP/1.0 Sonos/27.2-81200 (MDCR_MacPro4,1)\r\n");
+  //strcat(header,  "USER-AGENT: Linux UPnP/1.0 Sonos/27.2-81200 (MDCR_MacPro4,1)\r\n");
   
   snprintf(linebuffer, 85, "CONTENT-LENGTH: %d\r\n" , contentLength);
   strcat(header, linebuffer);
   memset(&linebuffer, 0, sizeof(linebuffer));
+  
+  //strcat(header,  "CONTENT-LENGTH\r\n");
+  
   
   strcat(header,  "CONTENT-TYPE: text/xml; charset=\"utf-8\"\r\n");
   
@@ -191,7 +197,37 @@ void makeGetRequest( char *request, const char* variableToGet)
 
 
 
+void SONOSClient::mute(bool muteit) {
+  
+  if(muteit) {
+    myHttpClient.makeRequest(1, /* type, 1 = POST */
+                      "/MediaRenderer/RenderingControl/Control", /* URL */
+                      sonosip, /* host */
+                      __SONOS_PORT,  /* port */
+                      FALSE, /* KEEP ALIVE */ 
+                      "text/xml; charset=\"utf-8\"", /* contentType */
+                      "SOAPACTION: \"urn:schemas-upnp-org:service:RenderingControl:1#SetMute", 
+                      "", /* userHeader2 */ 
+                      "<s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><s:Body><u:SetMute xmlns:u=\"urn:schemas-upnp-org:service:RenderingControl:1\"><InstanceID>0</InstanceID><Channel>Master</Channel><DesiredMute>1</DesiredMute></u:SetMute></s:Body></s:Envelope>", /*content*/
+                      buffer, /* response */
+                      1023 /* response size */
+                        );
+  }else {
+    myHttpClient.makeRequest(1, /* type, 1 = POST */
+                      "/MediaRenderer/RenderingControl/Control", /* URL */
+                      sonosip, /* host */
+                      __SONOS_PORT,  /* port */
+                      FALSE, /* KEEP ALIVE */ 
+                      "text/xml; charset=\"utf-8\"", /* contentType */
+                      "SOAPACTION: \"urn:schemas-upnp-org:service:RenderingControl:1#SetMute", 
+                      "", /* userHeader2 */ 
+                      "<s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><s:Body><u:SetMute xmlns:u=\"urn:schemas-upnp-org:service:RenderingControl:1\"><InstanceID>0</InstanceID><Channel>Master</Channel><DesiredMute>0</DesiredMute></u:SetMute></s:Body></s:Envelope>", /*content*/
+                      buffer, /* response */
+                      1023 /* response size */
+                        );
+  }
 
+}
 
 // dont use methods below
 
@@ -203,7 +239,7 @@ SONOSClient::sonos_cmd(int cmd)
 
 
 void 
-  SONOSClient::mute(bool muteit)
+  mute_midold(bool muteit)
 {
   
   if(millis()-last_sent>80) {

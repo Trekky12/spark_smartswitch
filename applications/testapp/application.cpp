@@ -1,5 +1,6 @@
 // This #include statement was automatically added by the Spark IDE.
 #include "MCP23017.h"
+#include "http_client.h"
 
 SYSTEM_MODE(SEMI_AUTOMATIC);
 
@@ -33,6 +34,8 @@ byte SparkIntPIN=D3;
 
 unsigned long last_sent=0L;
 TCPClient       client; 
+
+HTTPClient myHttpClient;
 
 byte serverIP[] = { 10, 0, 6, 118 };
 
@@ -89,6 +92,38 @@ void setup() {
 }
 
 
+
+void mute(bool muteit) {
+  
+  if(muteit) {
+    myHttpClient.makeRequest(1, /* type, 1 = POST */
+                      "/MediaRenderer/RenderingControl/Control", /* URL */
+                      serverIP, /* host */
+                      __SONOS_PORT,  /* port */
+                      FALSE, /* KEEP ALIVE */ 
+                      "text/xml; charset=\"utf-8\"", /* contentType */
+                      "SOAPACTION: \"urn:schemas-upnp-org:service:RenderingControl:1#SetMute", 
+                      "", /* userHeader2 */ 
+                      "<s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><s:Body><u:SetMute xmlns:u=\"urn:schemas-upnp-org:service:RenderingControl:1\"><InstanceID>0</InstanceID><Channel>Master</Channel><DesiredMute>1</DesiredMute></u:SetMute></s:Body></s:Envelope>", /*content*/
+                      buffer, /* response */
+                      1023 /* response size */
+                        );
+  }else {
+    myHttpClient.makeRequest(1, /* type, 1 = POST */
+                      "/MediaRenderer/RenderingControl/Control", /* URL */
+                      serverIP, /* host */
+                      __SONOS_PORT,  /* port */
+                      FALSE, /* KEEP ALIVE */ 
+                      "text/xml; charset=\"utf-8\"", /* contentType */
+                      "SOAPACTION: \"urn:schemas-upnp-org:service:RenderingControl:1#SetMute", 
+                      "", /* userHeader2 */ 
+                      "<s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><s:Body><u:SetMute xmlns:u=\"urn:schemas-upnp-org:service:RenderingControl:1\"><InstanceID>0</InstanceID><Channel>Master</Channel><DesiredMute>0</DesiredMute></u:SetMute></s:Body></s:Envelope>", /*content*/
+                      buffer, /* response */
+                      1023 /* response size */
+                        );
+  }
+
+}
 
 
 
@@ -173,54 +208,13 @@ void makeGetRequest( char *request, const char* variableToGet)
 
 
 void loop() {
-//TODO return TCPClient.read((uint8_t*) tweetbuffer, tweetlen);
 
-//if (!client.available()) {
 
-if(doIT == 1 && millis()-last_sent>80) {
-
-if (client.connect(serverIP, 1400)) {  
-   
-    uint32_t startTime = millis();
-     
-    digitalWrite(LED, !digitalRead(LED));
-
-    makeHeader(request, serverIP, 314, "SetMute");
-    makeMuteRequest(request, TRUE);
-
-    client.write((const uint8_t *)request, strlen(request));
-    client.flush();
-    
-    while(!client.available() && (millis() - startTime) < 5000){
-        SPARK_WLAN_Loop();
-    };
-    
-    
-    while(client.available()) {
-        r = client.read((uint8_t*) buffer, 1023);
-        if (r == -1) break;
-    }
-    
-    
-    client.flush();
-    client.stop();
-    
-    doIT=0;
-    
-//  } else {
-    //panic
-//  }
+if(millis()-last_sent>80) {
   
-} else {
-    // there seems to be something left from a previous connection
-    client.flush();
-    client.stop();
-}
+  mute(TRUE);
 
-//raus?  
-//delay(100);
-
-last_sent=millis();
+  last_sent=millis();
 
 }
 
