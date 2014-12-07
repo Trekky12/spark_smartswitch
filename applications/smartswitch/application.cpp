@@ -26,7 +26,7 @@
 This mode gives you a lot of rope to hang yourself with, so tread cautiously. */
 SYSTEM_MODE(SEMI_AUTOMATIC);
 
-WS2812B leds;
+//WS2812B leds;
 
 Adafruit_MCP23017 mcp;
 
@@ -52,7 +52,7 @@ int changeCount =0;
 #define BTN_T_HOLD 1000
 #define BTN_T_DOUBLE 200
 #define BTN_COUNT 6
-
+#define MAX_QUEUE_LENGTH 3
 
 
 
@@ -216,12 +216,12 @@ void setup() {
 
     pinMode(SparkIntPIN, INPUT);
 
-    leds.setup(4);
-    leds.setColor(0, 255, 255, 0);
-    leds.setColor(1, 0, 255, 0);
-    leds.setColor(2, 0, 0, 255);
-    leds.setColor(3, 255, 0, 0);
-    leds.show();
+    // leds.setup(4);
+    // leds.setColor(0, 255, 255, 0);
+    // leds.setColor(1, 0, 255, 0);
+    // leds.setColor(2, 0, 0, 255);
+    // leds.setColor(3, 255, 0, 0);
+    // leds.show();
 
 
     mcp.begin(); // use default address 0
@@ -250,10 +250,6 @@ void setup() {
     mcp.readGPIOAB();
 
     inInterrupt = true;
-
-
-
-
 }
 
 /**
@@ -273,26 +269,26 @@ void loop() {
         connectToCloud = false;
     }
 
+    #ifdef SERIAL_DEBUG
     if (pressCount > 50) {
-        #ifdef SERIAL_DEBUG
         Serial.println("50 interrupts...");
-        #endif /* SERIAL DEBUG */
         pressCount = 0;
     }
+    #endif /* SERIAL DEBUG */
 
+    #ifdef SERIAL_DEBUG
     if (serviceint) {
-        #ifdef SERIAL_DEBUG
         Serial.println("=============================");
         Serial.println("Interrupt detected!");
         Serial.println(millis());
-        #endif /* SERIAL DEBUG */
         serviceint = false;
     }
+    #endif /* SERIAL DEBUG */
 
 
-    if (!btn_event_queue.isEmpty()) {
+   if (!btn_event_queue.isEmpty()) {
       t_btn_event _btn_event = btn_event_queue.pop();
-      
+
       if (_btn_event.event == BTN_SINGLE) {
         // warten double click time
         delay(BTN_T_DOUBLE);
@@ -310,39 +306,38 @@ void loop() {
             }
         }
       }
-      
+
       // interpret the event and fire desired action
       // TODO shall be sourced out
       switch(_btn_event.btn) {
-      	case BTN_1: 
+        case BTN_1:
           switch (_btn_event.event) {
-            case BTN_SINGLE:              
-            mySonos.mute(TRUE);
-              
+            case BTN_SINGLE:
+              mySonos.mute(TRUE);
               break;
-            
+
             case BTN_DOUBLE:
-
+              mySonos.mute(TRUE);
               break;
-            
-            case BTN_HOLD:
 
+            case BTN_HOLD:
+              mySonos.mute(TRUE);
               break;
 
             default:
               break;
           }
           break;
-      	case BTN_2: 
+        case BTN_2:
           switch (_btn_event.event) {
             case BTN_SINGLE:
               mySonos.mute(FALSE);
               break;
-          
-            case BTN_DOUBLE:
 
+            case BTN_DOUBLE:
+            mySonos.mute(TRUE);
               break;
-          
+
             case BTN_HOLD:
               //get the spark back to the cloud
               connectToCloud = true;
@@ -352,14 +347,9 @@ void loop() {
               break;
           }
           break;
-      	default: 
-          ; 
+        default:
+          ;
           break;
       }
-    }
-
-
-
-
-
-}
+   }
+  }
