@@ -28,6 +28,10 @@ SYSTEM_MODE(SEMI_AUTOMATIC);
 
 //WS2812B leds;
 
+
+// to debug via serial console uncomment the following line:
+// #define SERIAL_DEBUG
+
 Adafruit_MCP23017 mcp;
 
 IntervalTimer myTimer;
@@ -35,7 +39,6 @@ IntervalTimer myTimer;
 SONOSClient mySonos;
 
 unsigned long lastSent = 0;
-bool currentMute = FALSE;
 
 int changeCount =0;
 
@@ -200,13 +203,13 @@ void setup() {
 
   delay(1000);
 
-#ifdef SERIAL_DEBUG
+    #ifdef SERIAL_DEBUG
     Serial.begin(9600);
     
     while(!Serial.available()) {  // Wait here until the user presses ENTER 
           SPARK_WLAN_Loop();        // in the Serial Terminal. Call the BG Tasks
     }
-#endif /* SERIAL_DEBUG */
+    #endif /* SERIAL_DEBUG */
   
   
   
@@ -314,15 +317,15 @@ void loop() {
         case BTN_1:
           switch (_btn_event.event) {
             case BTN_SINGLE:
-              mySonos.mute(TRUE);
+              mySonos.toggleMute();
               break;
 
             case BTN_DOUBLE:
-              mySonos.mute(TRUE);
+              mySonos.setMute(FALSE);
               break;
 
             case BTN_HOLD:
-              mySonos.mute(TRUE);
+              mySonos.setMute(TRUE);
               break;
 
             default:
@@ -332,11 +335,11 @@ void loop() {
         case BTN_2:
           switch (_btn_event.event) {
             case BTN_SINGLE:
-              mySonos.mute(FALSE);
+              mySonos.changeVolume(10);
               break;
 
             case BTN_DOUBLE:
-            mySonos.mute(TRUE);
+              mySonos.changeVolume(-10);
               break;
 
             case BTN_HOLD:

@@ -61,13 +61,21 @@ void SONOSClient::setMute(bool muteit) {
 
 void SONOSClient::toggleMute() {
   currentMute = getMute();
+  #ifdef SERIAL_DEBUG
   Serial.println(currentMute);
+  #endif /* SERIAL_DEBUG */
   
   if ( currentMute == 1) {
+    #ifdef SERIAL_DEBUG
     Serial.println("unmute");
+    #endif /* SERIAL_DEBUG */
+
     setMute(FALSE); 
   } else {
+    #ifdef SERIAL_DEBUG
     Serial.println("mute");
+    #endif /* SERIAL_DEBUG */
+
     setMute(TRUE);
   }
 }
@@ -84,7 +92,10 @@ void SONOSClient::changeVolume(short delta) {
       currentVolume = getVolume();
       lastVolumeRead = millis();
     } else {
+      #ifdef SERIAL_DEBUG
       Serial.println("Using the stored Volume");
+      #endif /* SERIAL_DEBUG */
+
     }
     
     #ifdef SERIAL_DEBUG
