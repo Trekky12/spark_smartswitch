@@ -1,6 +1,13 @@
-// Install the LowPower library for optional sleeping support.
-// See loop() function comments for details on usage.
-//#include <LowPower.h>
+// define whetere we are a buttonPad or behind a gira
+//#define __buttonPad
+#define __gira
+
+
+// plugins to include
+#define __sonos
+#define __hue
+#define __raspberry
+
 
 #include "WS2812B.h"
 #include "MCP23017.h"
@@ -26,11 +33,13 @@
 This mode gives you a lot of rope to hang yourself with, so tread cautiously. */
 SYSTEM_MODE(SEMI_AUTOMATIC);
 
-//WS2812B leds;
+#ifdef __buttonPad
+WS2812B leds;
+#endif /* buttonPad */
 
 
 // to debug via serial console uncomment the following line:
-// #define SERIAL_DEBUG
+#define SERIAL_DEBUG
 
 Adafruit_MCP23017 mcp;
 
@@ -59,6 +68,8 @@ int changeCount =0;
 
 
 
+
+
 // millis of the last btn up
 unsigned long btn_last_up   [BTN_COUNT] = {0UL};
 
@@ -73,7 +84,6 @@ volatile int pressCount = 0;
 int LED = D7;
 
 volatile boolean connectToCloud = false;
-
 volatile boolean inInterrupt = false;
 
 
@@ -87,7 +97,7 @@ volatile boolean serviceint = false;
 // btn can be one specific button or a sequence of buttons
 
 enum btn {
-    BTN_1 = 1, BTN_2 = 2, BTN_3 = 3, BTN_4 = 4, BTN_5 = 5, BTN_6 = 6, BTN_SEQUENCE = 7
+    BTN_0 = 0, BTN_1 = 1, BTN_2 = 2, BTN_3 = 3, BTN_4 = 4, BTN_5 = 5, BTN_6 = 6, BTN_SEQUENCE = 7
 };
 
 // btn_event_type can be based one one button or a specific sequence
@@ -120,8 +130,10 @@ void connect() {
 
 
 
+
 void handleButtonINT() {
-    inInterrupt = true;
+
+    noInterrupts();
     
     uint8_t pin=mcp.getLastInterruptPin();
     uint8_t val=mcp.getLastInterruptPinValue();
@@ -187,15 +199,13 @@ void handleButtonINT() {
         //DEBUG
       }
 	  }
-    serviceint = true;
     pressCount = pressCount + 1;
     inInterrupt = false;
+    
+   // attachInterrupt(SparkIntPIN, handleInterrupt, FALLING);
+    interrupts();
+    
 }
-
-
-
-
-
 
 
 
@@ -212,24 +222,23 @@ void setup() {
     #endif /* SERIAL_DEBUG */
   
   
-  
-     WiFi.connect();
-
-     while (!WiFi.ready()) SPARK_WLAN_Loop();
-
+    // connect to the WiFi
+    WiFi.connect();
+    // wait until it is actually connected
+    while (!WiFi.ready()) SPARK_WLAN_Loop();
 
     pinMode(SparkIntPIN, INPUT);
 
-    // leds.setup(4);
-    // leds.setColor(0, 255, 255, 0);
-    // leds.setColor(1, 0, 255, 0);
-    // leds.setColor(2, 0, 0, 255);
-    // leds.setColor(3, 255, 0, 0);
-    // leds.show();
-
+    #ifdef __buttonPad
+    leds.setup(4);
+    leds.setColor(0, 255, 255, 0);
+    leds.setColor(1, 0, 255, 0);
+    leds.setColor(2, 0, 0, 255);
+    leds.setColor(3, 255, 0, 0);
+    leds.show();
+    #endif /* __buttonPad */
 
     mcp.begin(); // use default address 0
-
 
     mcp.pinMode(BTN_1, INPUT);
     mcp.pullUp(BTN_1, HIGH);
@@ -264,7 +273,7 @@ void setup() {
  * and you can wait for interrupts while waiting.
  */
 void loop() {
-
+    
     if (connectToCloud) {
         connect();
         #ifdef SERIAL_DEBUG
@@ -290,7 +299,7 @@ void loop() {
     #endif /* SERIAL DEBUG */
 
 
-   if (!btn_event_queue.isEmpty()) {
+    if (!btn_event_queue.isEmpty()) {
       t_btn_event _btn_event = btn_event_queue.pop();
 
       if (_btn_event.event == BTN_SINGLE) {
@@ -319,15 +328,12 @@ void loop() {
             case BTN_SINGLE:
               mySonos.toggleMute();
               break;
-
             case BTN_DOUBLE:
               mySonos.setMute(FALSE);
               break;
-
             case BTN_HOLD:
               mySonos.setMute(TRUE);
               break;
-
             default:
               break;
           }
@@ -337,16 +343,13 @@ void loop() {
             case BTN_SINGLE:
               mySonos.changeVolume(10);
               break;
-
             case BTN_DOUBLE:
               mySonos.changeVolume(-10);
               break;
-
             case BTN_HOLD:
               //get the spark back to the cloud
               connectToCloud = true;
               break;
-
             default:
               break;
           }
@@ -356,4 +359,5 @@ void loop() {
           break;
       }
    }
+
   }

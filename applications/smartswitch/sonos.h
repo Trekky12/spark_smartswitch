@@ -21,9 +21,16 @@
 #define __SOAP_ACTION_HEADER_LENGTH 85
 #define __SOAP_BODY_LENGTH 350
 
-#define REQUEST_LEN 800
 #define __SONOS_PORT 1400
 
+
+// Buffer definitions
+
+#define RESPONSE_LEN 1024
+#define REQUEST_LEN 800
+
+
+// TODO abstract class / interface definieren
 
 class SONOSClient 
 {
@@ -32,26 +39,24 @@ public:
 	SONOSClient();
 
   // simple mute control
-  virtual short getMute();
-  virtual void setMute(bool muteit);
+  virtual short  getMute();
+  virtual void   setMute(bool muteit);
   
   // more complex control
   // first get the current state, then invert
-  virtual void toggleMute();
+  virtual void   toggleMute();
   
-
   // simple volume control
   virtual short  getVolume();
   virtual void   setVolume(short newVolume);
   
   virtual void   changeVolume(short delta);
   
-
-    
 private:
   String getXMLElementContent(String input, String element);
   void  setShortValue( const char *variableToSet, short valueToSet) ;
   short getShortValue( const char *variableToGet, const char *responsefield);
+  short getShortFromElement(char *input, short inputlength, const char *tag, short taglength);
 
 };
 

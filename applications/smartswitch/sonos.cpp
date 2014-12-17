@@ -11,9 +11,9 @@
 HTTPClient myHttpClient;
 
 // response buffer
-char buffer[1024];
+char buffer[RESPONSE_LEN];
 char request[REQUEST_LEN];
-char header[400];
+
 char linebuffer[85];
 
 char soapActionHeader[__SOAP_ACTION_HEADER_LENGTH];
@@ -46,7 +46,7 @@ SONOSClient::SONOSClient()
 
 
 short SONOSClient::getMute() {
-    return getShortValue("Mute", "CurrentMute");
+    return getShortValue("Mute", "<CurrentMute>");
 }
 
 void SONOSClient::setMute(bool muteit) {
@@ -90,12 +90,13 @@ void SONOSClient::changeVolume(short delta) {
       Serial.println("Updating current Volume");
       #endif /* SERIAL_DEBUG */
       currentVolume = getVolume();
+      
+      // update only after updated
       lastVolumeRead = millis();
     } else {
       #ifdef SERIAL_DEBUG
       Serial.println("Using the stored Volume");
       #endif /* SERIAL_DEBUG */
-
     }
     
     #ifdef SERIAL_DEBUG
@@ -103,24 +104,29 @@ void SONOSClient::changeVolume(short delta) {
     Serial.println(currentVolume);
     #endif /* SERIAL_DEBUG */
     
-    currentVolume = currentVolume + delta;
+    if (currentVolume >= 0) {
+      currentVolume = currentVolume + delta;
     
-    // upper limit
-    if (currentVolume > 100) {
-      currentVolume = 100;
-    }
+      // upper limit
+      if (currentVolume > 100) {
+        currentVolume = 100;
+      }
 
-    // lower limit
-    if (currentVolume < 0) {
-      currentVolume = 0;
+      // lower limit
+      if (currentVolume < 0) {
+        currentVolume = 0;
+      }
+    
+      setVolume(currentVolume);
+    } else {
+      //Do some error handling
     }
     
-    setVolume(currentVolume);
   }
 }
 
 short SONOSClient::getVolume() {
-    return getShortValue("Volume", "CurrentVolume");
+    return getShortValue("Volume", "<CurrentVolume>");
 }
 
 void SONOSClient::setVolume(short newVolume) {
@@ -171,6 +177,24 @@ String SONOSClient::getXMLElementContent(String input, String element)
 }
 
 
+short SONOSClient::getShortFromElement(char *input, short inputlength, const char *tag, short taglength) {
+    
+    // try to find the tag in the string
+    // returns either NULL or pointer to
+    // the beginning of our tag
+    char *pos = strstr(input, tag);
+    
+    // if found, and does not end at the end of the string
+    if(pos != NULL && (pos - input)<(inputlength + taglength)) {
+        // we move the pointer by the length of the tag
+        // now we can directly use atoi, as it processes all following
+        // numbers, sure to stop when the next tag opens
+        return(atoi(pos+taglength));
+    }
+    
+    return NULL;
+}
+
 /*----------------------------------------------------------------------*/
 // soap set and get
 
@@ -196,7 +220,7 @@ void SONOSClient::setShortValue(const char *service, short valueToSet)
                     "", /* userHeader2 */ 
                     soapBody, /* content */
                     buffer, /* response */
-                    1023, /* response size */
+                    REQUEST_LEN, /* response size */
                     FALSE /* storeResponseHeader */
                       );
 }
@@ -213,7 +237,7 @@ short SONOSClient::getShortValue(const char *service, const char *responsefield)
   snprintf(soapBody, __SOAP_BODY_LENGTH, "%s<u:Get%s xmlns:u=\"%s\">%s</u:Get%s>\r\n", __SOAP_OPEN, service, __SOAP_METHOD, __SOAP_CHANNEL, service);
   
   
-  myHttpClient.makeRequest(1, /* type, 1 = POST */
+  short received_bytes = myHttpClient.makeRequest(1, /* type, 1 = POST */
                     "/MediaRenderer/RenderingControl/Control", /* URL */
                     sonosip, /* host */
                     __SONOS_PORT,  /* port */
@@ -223,15 +247,18 @@ short SONOSClient::getShortValue(const char *service, const char *responsefield)
                     "", /* userHeader2 */ 
                     soapBody, /*content*/
                     buffer, /* response */
-                    1023, /* response size */
+                    REQUEST_LEN, /* response size */
                     FALSE /* storeResponseHeader */
                       );
 
-  if (strlen(buffer) > 0) {
-    String returnedValue = getXMLElementContent(buffer, responsefield);
-    if (returnedValue != NULL) {
-      return returnedValue.toInt();
-    }
+  if (received_bytes > 0) {
+    //String returnedValue = getXMLElementContent(buffer, responsefield);
+    //if (returnedValue != NULL) {
+    //  return returnedValue.toInt();
+    //}
+//    return parsePositiveShortValueFromBehind(buffer, received_bytes, 60, '<');
+    return getShortFromElement(buffer, received_bytes, responsefield, strlen(responsefield));
+    
   }
 
   // otherwise return -1 to indicate an error
