@@ -8,47 +8,57 @@ with open("../applications/smartswitch/SmartSwitchConfig.json") as json_file:
     config_data = json.load(json_file)
 
 
-print '#include "SmartSwitchConfig.h"'
+# read devices and device setup data
+devices = config_data["devices"]
 
+print '#include "SmartSwitchConfig.h"'
+    
 print '// Dynamicly added includes'
-for device in config_data["devices"]:
+for device in devices:
     # include needed headers
-    print '#include "%s.h"' % device.split("_")[1]
+    print '#include "clients/%s/%s.h"' % (device.split("_")[1], device.split("_")[1])
     
 print '\n\n'
 
 
 print '// Device instantiation'
-for device in config_data["devices"]:
-    # include needed headers
-    print "%s %s;" % (device.split("_")[1], device)
+for device in devices:
+        print "%s %s;" % (device.split("_")[1], device)
 
 
 print '\n\n'
 
 
-print 'SMARTSWITCHConfig::SMARTSWITCHConfig()'
-print '{'
+print 'SMARTSWITCHConfig::SMARTSWITCHConfig() {'
 print '}'
 
 print '\n\n'
 
 
-print 'void SMARTSWITCHConfig::setup()'
-print '{'
+print 'void SMARTSWITCHConfig::setup() {'
 print '// initialize what is needed'
-print  '//TODO mySonos.setIP("");'
+print '// basically we call setIP() for each client device'
+for device in devices:
+    # include needed headers
+    # check if an IP is given and call setIP() if so
+    device_params = config_data["devices"][device]
+    
+    if "IP" in device_params.keys():
+        ipfield = devices[device]["IP"].split(".")
+        print "%s.setIP(%s, %s, %s, %s);" % (device, ipfield[0], ipfield[1] , ipfield[2] , ipfield[3] )
+        
+    if "Port" in device_params.keys():
+        print "%s.setPort(%s);" % (device,  device_params["Port"])
+        
+
+
 print '}'
 
 print '\n\n'
 
 
-print 'void SMARTSWITCHConfig::process(t_btn_event* e)'
-print '{'
-print ' // initialize what is needed'
-print '  // interpret the event and fire desired action'
-
-
+print '// interpret the event and fire desired action'
+print 'void SMARTSWITCHConfig::process(t_btn_event* e) {'
 
 # open the switch case for event-button
 print  "switch(e->btn) {"

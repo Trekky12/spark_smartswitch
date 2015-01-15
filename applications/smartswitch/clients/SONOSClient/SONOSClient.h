@@ -1,7 +1,7 @@
 #ifndef __SONOS_H
 #define __SONOS_H
 
-#include "allduino.h"
+#include "../../lib/allduino.h"
 //#include <stdlib.h>
 #include "spark_wiring_tcpclient.h"
 #include "application.h"
@@ -35,8 +35,49 @@
 class SONOSClient 
 {
 
+  /*----------------------------------------------------------------------*/
+  /* Global variables */
+  /*----------------------------------------------------------------------*/
+
+
+
+  HTTPClient myHttpClient;
+
+  // response buffer
+  char buffer[RESPONSE_LEN];
+  char request[REQUEST_LEN];
+
+  char linebuffer[85];
+
+  char soapActionHeader[__SOAP_ACTION_HEADER_LENGTH];
+  char soapBody[__SOAP_BODY_LENGTH];
+
+  // maximum time the stored volume is accepted
+  // after time expired, volume will be fetched from the remote
+  // intention is to reduce request number especially when 
+  // user tries to increase/decrease the volume multiple times
+  // the propability that this method interferes with volume
+  // changes of other sources can be seen as quite small
+  #define __MAX_VOLUME_AGE 1500
+  short currentVolume = -1;
+  unsigned long lastVolumeRead = 0L;
+
+  short currentMute = 0;
+
+
+  static const uint16_t TIMEOUT = 5000; // Allow maximum 5s between data packets.
+
+  //#define SONOS_LOGING
+
+  byte sonosip[4] = { 0 };
+  
+  
+
 public:
 	SONOSClient();
+  
+  // setIP 
+  virtual void   setIP(unsigned short a, unsigned short b, unsigned short c, unsigned short d);
 
   // simple mute control
   virtual short  getMute();

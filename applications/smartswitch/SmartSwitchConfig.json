@@ -1,6 +1,7 @@
 {
   "devices": {
-    "wohnzimmer_SONOSClient":"10.0.0.213"
+    "wohnzimmer_SONOSClient": { "IP": "10.0.6.118" },
+    "test_HTTPGETClient": {"IP": "10.0.2.5", "Port": "80"}
   },
   "btns": {
     "BTN_1": {

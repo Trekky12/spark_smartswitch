@@ -10,13 +10,13 @@
 //#include "spark_wiring.h"
 
 // hardware libraries
-#include "WS2812B.h"
-#include "MCP23017.h"
+#include "lib/WS2812B.h"
+#include "lib/MCP23017.h"
 
 // software libraries
 #include "SmartSwitchConfig.h"
-#include "SparkIntervalTimer.h"
-#include "QueueList.h"
+#include "lib/SparkIntervalTimer.h"
+#include "lib/QueueList.h"
 
 // Insert firearm metaphor here
 /* The Spark Core's manual mode puts everything in your hands. 

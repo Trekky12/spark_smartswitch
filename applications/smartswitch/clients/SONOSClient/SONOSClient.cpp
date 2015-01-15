@@ -2,48 +2,17 @@
 #include "spark_http_client/http_client.h"
 
 
-/*----------------------------------------------------------------------*/
-/* Global variables */
-/*----------------------------------------------------------------------*/
-
-
-
-HTTPClient myHttpClient;
-
-// response buffer
-char buffer[RESPONSE_LEN];
-char request[REQUEST_LEN];
-
-char linebuffer[85];
-
-char soapActionHeader[__SOAP_ACTION_HEADER_LENGTH];
-char soapBody[__SOAP_BODY_LENGTH];
-
-// maximum time the stored volume is accepted
-// after time expired, volume will be fetched from the remote
-// intention is to reduce request number especially when 
-// user tries to increase/decrease the volume multiple times
-// the propability that this method interferes with volume
-// changes of other sources can be seen as quite small
-#define __MAX_VOLUME_AGE 1500
-short currentVolume = -1;
-unsigned long lastVolumeRead = 0L;
-
-short currentMute = 0;
-
-
-static const uint16_t TIMEOUT = 5000; // Allow maximum 5s between data packets.
-
-//#define SONOS_LOGING
-
-byte sonosip[] = { 10, 0, 6, 118 };
-
-
 
 SONOSClient::SONOSClient()
 {
 }
 
+void SONOSClient::setIP(unsigned short a, unsigned short b, unsigned short c, unsigned short d) {
+  sonosip[0] = a;
+  sonosip[1] = b;
+  sonosip[2] = c;
+  sonosip[3] = d;
+}
 
 short SONOSClient::getMute() {
     return getShortValue("Mute", "<CurrentMute>");
