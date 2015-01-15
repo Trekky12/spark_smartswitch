@@ -37,9 +37,10 @@ class SONOSClient
 
   // response buffer
   char buffer[RESPONSE_LEN];
-  char request[REQUEST_LEN];
 
-  char linebuffer[85];
+  //  do we need these buffers ?
+  //  char request[REQUEST_LEN];
+  //  char linebuffer[85];
 
   char soapActionHeader[__SOAP_ACTION_HEADER_LENGTH];
   char soapBody[__SOAP_BODY_LENGTH];
