@@ -1,5 +1,6 @@
-#ifndef __CONFIG_H
-#define __CONFIG_H
+#ifndef __SMARTSWITCHCONFIG_H
+#define __SMARTSWITCHCONFIG_H
+
 
 #include "application.h"
 // include what is needed
@@ -34,4 +35,4 @@ public:
 
 };
 
-#endif /* __CONFIG_H */
+#endif /* __SMARTSWITCHCONFIG_H */

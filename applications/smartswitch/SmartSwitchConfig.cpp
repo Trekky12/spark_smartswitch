@@ -1,11 +1,11 @@
 // TODO: GENERATE THIS FILE FROM config.json
 
-#include "config.h"
+#include "SmartSwitchConfig.h"
 
 //dynamic includes
 #include "sonos.h"
 
-SONOSClient mySonos;
+//SONOSClient mySonos;
 
 
 SMARTSWITCHConfig::SMARTSWITCHConfig()

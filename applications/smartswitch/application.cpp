@@ -14,7 +14,7 @@
 #include "MCP23017.h"
 
 // software libraries
-#include "config.h"
+#include "SmartSwitchConfig.h"
 #include "SparkIntervalTimer.h"
 #include "QueueList.h"
 
