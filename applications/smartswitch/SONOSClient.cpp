@@ -1,4 +1,4 @@
-#include "sonos.h"
+#include "SONOSClient.h"
 #include "spark_http_client/http_client.h"
 
 

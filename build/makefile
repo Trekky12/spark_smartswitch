@@ -227,6 +227,12 @@ check_external_deps:
 
 # Tool invocations
 
+# config builder for smartswitch
+SmartSwitchConfig: SmartSwitchConfig.json
+SmartSwitchConfig.json:
+	python $(PWD)/../applications/smartswitch/create_config.py > $(PWD)/../applications/smartswitch/SmartSwitchConfig.cpp
+
+
 # C compiler to build .o from .c in $(BUILD_DIR)
 $(BUILD_PATH)%.o : $(SRC_PATH)%.c
 	@echo Building file: $<
