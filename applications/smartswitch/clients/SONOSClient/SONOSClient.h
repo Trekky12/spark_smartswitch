@@ -18,28 +18,20 @@
 #define __SOAP_METHOD   "urn:schemas-upnp-org:service:RenderingControl:1"
 #define __SOAP_CHANNEL  "<InstanceID>0</InstanceID><Channel>Master</Channel>"
 
-#define __SOAP_ACTION_HEADER_LENGTH 85
-#define __SOAP_BODY_LENGTH 350
 
+// definition of the sonos port
 #define __SONOS_PORT 1400
 
 
-// Buffer definitions
-
+// Buffer length definitions
 #define RESPONSE_LEN 1024
 #define REQUEST_LEN 800
+#define __SOAP_ACTION_HEADER_LENGTH 85
+#define __SOAP_BODY_LENGTH 350
 
-
-// TODO abstract class / interface definieren
 
 class SONOSClient 
 {
-
-  /*----------------------------------------------------------------------*/
-  /* Global variables */
-  /*----------------------------------------------------------------------*/
-
-
 
   HTTPClient myHttpClient;
 

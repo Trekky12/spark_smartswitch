@@ -5,13 +5,13 @@
   },
   "btns": {
     "BTN_1": {
-      "BTN_SINGLE": "wohnzimmer_SONOSClient.setMute(TRUE);",
-      "BTN_DOUBLE": "",
+      "BTN_SINGLE": "wohnzimmer_SONOSClient.toggleMute();",
+      "BTN_DOUBLE": "wohnzimmer_SONOSClient.setMute(TRUE);",
       "BTN_HOLD":   ""
     },
     "BTN_2": {
-      "BTN_SINGLE": "wohnzimmer_SONOSClient.setMute(FALSE);",
-      "BTN_DOUBLE": "wohnzimmer_SONOSClient.setMute(FALSE);",
+      "BTN_SINGLE": "test_HTTPGETClient.sendRequest(\"/toaster\", \"testinhalt\");",
+      "BTN_DOUBLE": "",
       "BTN_HOLD":   ""
     },
     "BTN_3": {

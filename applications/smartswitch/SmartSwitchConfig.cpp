@@ -35,10 +35,10 @@ switch(e->btn) {
        
        break;
      case BTN_SINGLE:
-       wohnzimmer_SONOSClient.setMute(TRUE);
+       wohnzimmer_SONOSClient.toggleMute();
        break;
      case BTN_DOUBLE:
-       wohnzimmer_SONOSClient.setMute(FALSE);
+       wohnzimmer_SONOSClient.setMute(TRUE);
        break;
      }
      break;
@@ -51,6 +51,7 @@ switch(e->btn) {
        test_HTTPGETClient.sendRequest("/toaster", "testinhalt");
        break;
      case BTN_DOUBLE:
+       
        break;
      }
      break;

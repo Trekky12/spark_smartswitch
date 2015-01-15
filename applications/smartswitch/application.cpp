@@ -93,7 +93,8 @@ void handleButtonINT() {
         int idx = pin - 1;
 
         // button release
-        if (val == BTN_UP) {
+        // we do not process events while the queue is full
+        if (val == BTN_UP && (btn_event_queue.count() < MAX_QUEUE_LENGTH)) {
             // hold condition
             if (now - btn_last_down[idx] >= BTN_T_HOLD) {
                 t_btn_event _btn_event;

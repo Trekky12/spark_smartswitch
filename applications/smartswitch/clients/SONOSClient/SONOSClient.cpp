@@ -1,7 +1,8 @@
 #include "SONOSClient.h"
 #include "spark_http_client/http_client.h"
 
-
+// for debugging
+#define SONOS_SERIAL_DEBUG 1
 
 SONOSClient::SONOSClient()
 {
@@ -30,23 +31,26 @@ void SONOSClient::setMute(bool muteit) {
 
 void SONOSClient::toggleMute() {
   currentMute = getMute();
-  #ifdef SERIAL_DEBUG
+  #ifdef SONOS_SERIAL_DEBUG
   Serial.println(currentMute);
-  #endif /* SERIAL_DEBUG */
-  
-  if ( currentMute == 1) {
-    #ifdef SERIAL_DEBUG
-    Serial.println("unmute");
-    #endif /* SERIAL_DEBUG */
+  #endif /* SONOS_SERIAL_DEBUG */
 
-    setMute(FALSE); 
+  if ( currentMute == 1) {
+    #ifdef SONOS_SERIAL_DEBUG
+    Serial.println("unmute");
+    #endif /* SONOS_SERIAL_DEBUG */
+
+    setMute(FALSE);
   } else {
-    #ifdef SERIAL_DEBUG
+    #ifdef SONOS_SERIAL_DEBUG
     Serial.println("mute");
-    #endif /* SERIAL_DEBUG */
+    #endif /* SONOS_SERIAL_DEBUG */
 
     setMute(TRUE);
   }
+
+  
+  
 }
 
 
@@ -55,23 +59,23 @@ void SONOSClient::changeVolume(short delta) {
     
     // negative value indicates error or unset state
     if (currentVolume == -1 || (millis()-lastVolumeRead)>__MAX_VOLUME_AGE) {
-      #ifdef SERIAL_DEBUG
+      #ifdef SONOS_SERIAL_DEBUG
       Serial.println("Updating current Volume");
-      #endif /* SERIAL_DEBUG */
+      #endif /* SONOS_SERIAL_DEBUG */
       currentVolume = getVolume();
       
       // update only after updated
       lastVolumeRead = millis();
     } else {
-      #ifdef SERIAL_DEBUG
+      #ifdef SONOS_SERIAL_DEBUG
       Serial.println("Using the stored Volume");
-      #endif /* SERIAL_DEBUG */
+      #endif /* SONOS_SERIAL_DEBUG */
     }
     
-    #ifdef SERIAL_DEBUG
+    #ifdef SONOS_SERIAL_DEBUG
     Serial.print("Current Volume: ");
     Serial.println(currentVolume);
-    #endif /* SERIAL_DEBUG */
+    #endif /* SONOS_SERIAL_DEBUG */
     
     if (currentVolume >= 0) {
       currentVolume = currentVolume + delta;
