@@ -165,12 +165,23 @@ void setup() {
 
     mcp.begin(); // use default address 0
 
+    mcp.pinMode(BTN_0, INPUT);
+    mcp.pullUp(BTN_0, HIGH);
+    
     mcp.pinMode(BTN_1, INPUT);
     mcp.pullUp(BTN_1, HIGH);
 
     mcp.pinMode(BTN_2, INPUT);
     mcp.pullUp(BTN_2, HIGH);
-
+    
+    mcp.pinMode(BTN_3, INPUT);
+    mcp.pullUp(BTN_3, HIGH);
+    
+    mcp.pinMode(BTN_4, INPUT);
+    mcp.pullUp(BTN_4, HIGH);
+    
+    mcp.pinMode(BTN_5, INPUT);
+    mcp.pullUp(BTN_5, HIGH);
 
     pinMode(LED, OUTPUT);
 
@@ -183,9 +194,13 @@ void setup() {
     mcp.setupInterrupts(true, false, LOW);
     // TODO only initialize interrupts needed ?
     //      source out to SMARTSWITCHConfig.setup() ?
+    mcp.setupInterruptPin(BTN_0, CHANGE);
     mcp.setupInterruptPin(BTN_1, CHANGE);
     mcp.setupInterruptPin(BTN_2, CHANGE);
-
+    mcp.setupInterruptPin(BTN_3, CHANGE);
+    mcp.setupInterruptPin(BTN_4, CHANGE);
+    mcp.setupInterruptPin(BTN_5, CHANGE);
+    
     mcp.readGPIOAB();
 
     inInterrupt = true;
