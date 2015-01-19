@@ -205,7 +205,7 @@ size: $(TARGETDIR)$(TARGET).elf
 	@cp $< $@
 	$(DFUSUFFIX) -v 1d50 -p 607f -a $@
 
-$(TARGETDIR)$(TARGET).elf : check_external_deps $(ALLOBJ)
+$(TARGETDIR)$(TARGET).elf : check_external_deps $(ALLOBJ) 
 	@echo Building target: $@
 	@echo Invoking: ARM GCC C++ Linker
 	$(MKDIR) $(dir $@)
@@ -217,7 +217,13 @@ $(TARGETDIR)$(TARGET).elf : check_external_deps $(ALLOBJ)
 #       the external libs, make must be called on the libs for
 #       every build. Targets which depend directly on this recipie
 #       will then always be rebuilt, ie. $(TARGET).elf
-check_external_deps:
+check_external_deps: 
+ifeq ("$(APP)","smartswitch")
+	@echo Generating SmartSwitchConfig:
+	python $(SRC_PATH)$(USRSRC)create_config.py > $(SRC_PATH)$(USRSRC)SmartSwitchConfig.cpp
+	@echo
+endif
+
 	@echo Building core-common-lib
 	@$(MAKE) -C $(PROJECT_DIR)$(LIB_CORE_COMMON_PATH)build $(MAKE_ARGS)
 	@echo
@@ -225,12 +231,7 @@ check_external_deps:
 	@$(MAKE) -C $(PROJECT_DIR)$(LIB_CORE_COMMUNICATION_PATH)build $(MAKE_ARGS)
 	@echo
 
-# Tool invocations
 
-# config builder for smartswitch
-SmartSwitchConfig: SmartSwitchConfig.json
-SmartSwitchConfig.json:
-	python $(PWD)/../applications/smartswitch/create_config.py > $(PWD)/../applications/smartswitch/SmartSwitchConfig.cpp
 
 
 # C compiler to build .o from .c in $(BUILD_DIR)
