@@ -47,6 +47,8 @@ public:
   void setupInterruptPin(uint8_t p, uint8_t mode);
   uint8_t getLastInterruptPin();
   uint8_t getLastInterruptPinValue();
+  
+  uint8_t readRegister2(uint8_t addr);
 
  private:
   uint8_t i2caddr;

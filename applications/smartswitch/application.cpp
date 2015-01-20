@@ -1,6 +1,6 @@
 // define whetere we are a buttonPad or behind a gira
-#define __buttonPad
-//#define __gira
+// #define __buttonPad
+#define __gira
 
 // plugins to include
 #define __sonos
@@ -21,7 +21,7 @@
 // Insert firearm metaphor here
 /* The Spark Core's manual mode puts everything in your hands. 
 This mode gives you a lot of rope to hang yourself with, so tread cautiously. */
-SYSTEM_MODE(SEMI_AUTOMATIC);
+//SYSTEM_MODE(SEMI_AUTOMATIC);
 
 #ifdef __buttonPad
 WS2812B leds;
@@ -29,7 +29,7 @@ WS2812B leds;
 
 
 // to debug via serial console uncomment the following line:
-#define SERIAL_DEBUG
+// #define SERIAL_DEBUG
 
 Adafruit_MCP23017 mcp;
 
@@ -63,14 +63,26 @@ volatile int pressCount = 0;
 
 int LED = D7;
 
-volatile boolean inInterrupt = false;
+
+volatile boolean boom = false;
 
 // create a queue of t_btn_events.
 QueueList <t_btn_event> btn_event_queue;
 
-void handleButtonINT() {
 
-    noInterrupts();
+//debounce
+#define TIMEOUT 50 // milliseconds
+volatile unsigned long timestamp = 0;
+
+void handleButtonINT() {
+  noInterrupts();
+  boom = true;
+
+}
+
+void processButtonINT() {
+
+
 
     uint8_t pin = mcp.getLastInterruptPin();
     uint8_t val = mcp.getLastInterruptPinValue();
@@ -96,13 +108,14 @@ void handleButtonINT() {
         // we do not process events while the queue is full
         if (val == BTN_UP && (btn_event_queue.count() < MAX_QUEUE_LENGTH)) {
             // hold condition
-            if (now - btn_last_down[idx] >= BTN_T_HOLD) {
-                t_btn_event _btn_event;
-                _btn_event.btn = pin;
-                _btn_event.event = BTN_HOLD;
-                btn_event_queue.push(_btn_event);
-            }// double click condition
-            else if ((now - btn_last_up[idx] < BTN_T_DOUBLE) && (now - btn_last_down[idx] < BTN_T_HOLD)) {
+            // if (now - btn_last_down[idx] >= BTN_T_HOLD) {
+//                 t_btn_event _btn_event;
+//                 _btn_event.btn = pin;
+//                 _btn_event.event = BTN_HOLD;
+//                 btn_event_queue.push(_btn_event);
+//             }// double click condition
+//else 
+            if ((now - btn_last_up[idx] < BTN_T_DOUBLE) && (now - btn_last_down[idx] < BTN_T_HOLD)) {
                 t_btn_event _btn_event;
                 _btn_event.btn = pin;
                 _btn_event.event = BTN_DOUBLE;
@@ -124,11 +137,86 @@ void handleButtonINT() {
         }
     }
     pressCount = pressCount + 1;
-    inInterrupt = false;
 
     // attachInterrupt(SparkIntPIN, handleInterrupt, FALLING);
-    interrupts();
 
+}
+
+
+
+// This function gets called whenever there is a matching API request
+// the command string format is <led number>,<state>
+// for example: 1,HIGH or 1,LOW
+//              2,HIGH or 2,LOW
+
+int ledControl(String command)
+{
+   int state = 0;
+   int mcpPin = -1;
+   //find out the pin number and convert the ascii to integer
+   int pinNumber = (command.charAt(0) - '0') - 1;
+   //Sanity check to see if the pin numbers are within limits
+   if (pinNumber < 0 || pinNumber > 5) return -1;
+
+   // find out the state of the led
+   if(command.substring(2,6) == "HIGH") state = 1;
+   else if(command.substring(2,5) == "LOW") state = 0;
+   else return -1;
+
+   // write to the appropriate pin on the mcp
+   switch(pinNumber) {
+     case 0:
+       mcpPin = BTN_LED_0;
+       break;
+     case 1:
+       mcpPin = BTN_LED_1;
+       break;
+     case 2:
+        mcpPin = BTN_LED_2;
+        break;
+     case 3:
+        mcpPin = BTN_LED_3;
+        break;        
+     case 4:
+        mcpPin = BTN_LED_4;
+        break;      
+     case 5:
+        mcpPin = BTN_LED_5;
+        break;
+    }
+    if (mcpPin >= 0)
+      mcp.digitalWrite(mcpPin, state);
+   
+   return 1;
+}
+
+
+// This function gets called whenever there is a matching API request
+// the command string format is <led number>,<Red>,<Green>,<Blue>
+// for example: 1,000,000,000
+
+int ledControlRGB(String command)
+{
+   //find out the pin number and convert the ascii to integer
+   int pinNumber = (command.charAt(0) - '0') - 1;
+   //Sanity check to see if the pin numbers are within limits
+   if (pinNumber < 0 || pinNumber > 4) return -1;
+
+   /*char * params = new char[command.length() + 1];
+
+   strcpy(params, command.c_str());
+   // find out the state of the led
+   int red = atoi(params.substring(2,4));
+   int green = atoi(params.substring(6,8));
+   int blue = atoi(params.substring(10,12));
+   
+
+   if (pinNumber >= 0){
+     leds.setColor(pinNumber, red, green, blue);
+     leds.show();
+   }*/
+
+   return 1;
 }
 
 void setup() {
@@ -143,7 +231,6 @@ void setup() {
     }
 #endif /* SERIAL_DEBUG */
 
-
     // connect to the WiFi
     WiFi.connect();
     // wait until it is actually connected
@@ -151,6 +238,10 @@ void setup() {
 
     // initialize configuration
     myConfig.setup();
+    
+   //Register our Spark function here
+    Spark.function("led", ledControl); 
+    Spark.function("ledrgb", ledControlRGB);    
 
     pinMode(SparkIntPIN, INPUT);
 
@@ -162,7 +253,8 @@ void setup() {
     leds.setColor(3, 255, 0, 0);
     leds.show();
 #endif /* __buttonPad */
-
+    
+    
     mcp.begin(); // use default address 0
 
     mcp.pinMode(BTN_0, INPUT);
@@ -183,15 +275,44 @@ void setup() {
     mcp.pinMode(BTN_5, INPUT);
     mcp.pullUp(BTN_5, HIGH);
 
-    pinMode(LED, OUTPUT);
+    mcp.pinMode(BTN_6, INPUT);
+    mcp.pullUp(BTN_6, HIGH);
+    
+    mcp.pinMode(BTN_7, INPUT);
+    mcp.pullUp(BTN_7, HIGH);
+    
+#ifdef __gira
+     mcp.pinMode(BTN_LED_0, OUTPUT);
+     mcp.pinMode(BTN_LED_1, OUTPUT);
+     mcp.pinMode(BTN_LED_2, OUTPUT);
+     mcp.pinMode(BTN_LED_3, OUTPUT);
+     mcp.pinMode(BTN_LED_4, OUTPUT);
+     mcp.pinMode(BTN_LED_5, OUTPUT);
+     
+     mcp.digitalWrite(BTN_LED_0, HIGH);
+     mcp.digitalWrite(BTN_LED_1, HIGH);
+     mcp.digitalWrite(BTN_LED_2, HIGH);
+     mcp.digitalWrite(BTN_LED_3, HIGH);
+     mcp.digitalWrite(BTN_LED_4, HIGH);
+     mcp.digitalWrite(BTN_LED_5, HIGH);
+     
+     
+     
+     
+     
+ #endif /* __gira */   
 
-    // Spark Interupt 
-    attachInterrupt(SparkIntPIN, handleButtonINT, FALLING);
+    pinMode(LED, OUTPUT);
+    
 
     // AUTO allocate printQcount to run every 1000ms (2000 * .5ms period)
     // myTimer.begin(printQcount, 3000, hmSec);
 
-    mcp.setupInterrupts(true, false, LOW);
+
+    // first boolean expression mirros interrupts of the two banks of the MCP
+    // it seems not to interfere with our use case, but we don't need it 
+    // so it is set to false
+    mcp.setupInterrupts(false, false, LOW);
     // TODO only initialize interrupts needed ?
     //      source out to SMARTSWITCHConfig.setup() ?
     mcp.setupInterruptPin(BTN_0, CHANGE);
@@ -200,16 +321,43 @@ void setup() {
     mcp.setupInterruptPin(BTN_3, CHANGE);
     mcp.setupInterruptPin(BTN_4, CHANGE);
     mcp.setupInterruptPin(BTN_5, CHANGE);
+    mcp.setupInterruptPin(BTN_6, CHANGE);
+    mcp.setupInterruptPin(BTN_7, CHANGE);
     
     mcp.readGPIOAB();
-
-    inInterrupt = true;
+    
+    Serial.println("mcp interrupts are ready");
+    
+    // Spark Interupt 
+    attachInterrupt(SparkIntPIN, handleButtonINT, FALLING);
+    Serial.println("spark interrupt attach is ready");
+    
+    
+    
+    Serial.println("setup done");
+    
 }
 
 /**
  * main routine
  */
 void loop() {
+  
+  if (boom) {
+  processButtonINT();
+   // uint8_t reg = mcp.readRegister2(MCP23017_INTFA);
+ // #ifdef SERIAL_DEBUG
+//    Serial.print(millis() );
+//    Serial.print('-');
+//    Serial.print(reg);
+//    Serial.println();
+//  #endif /* SERIAL_DEBUG */
+//
+//  mcp.readGPIOAB();
+   boom = false;
+   interrupts();
+   
+  }
 
 #ifdef SERIAL_DEBUG
     if (pressCount > 50) {
@@ -244,3 +392,5 @@ void loop() {
     }
 
 }
+
+

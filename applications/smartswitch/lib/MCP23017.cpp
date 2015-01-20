@@ -84,6 +84,9 @@ void Adafruit_MCP23017::writeRegister(uint8_t regAddr, uint8_t regValue){
 	Wire.endTransmission();
 }
 
+uint8_t Adafruit_MCP23017::readRegister2(uint8_t addr){
+	return readRegister(addr);
+}
 
 /**
  * Helper to update a single bit of an A/B register.
@@ -119,6 +122,12 @@ void Adafruit_MCP23017::begin(uint8_t addr) {
 	// all inputs on port A and B
 	writeRegister(MCP23017_IODIRA,0xff);
 	writeRegister(MCP23017_IODIRB,0xff);
+  
+  // initialize interrupt registration with 0
+  // TODO
+	writeRegister(MCP23017_GPINTENA,0x00);
+	writeRegister(MCP23017_GPINTENB,0x00);
+  
 }
 
 /**
@@ -274,6 +283,7 @@ uint8_t Adafruit_MCP23017::getLastInterruptPin(){
 	return MCP23017_INT_ERR;
 
 }
+
 uint8_t Adafruit_MCP23017::getLastInterruptPinValue(){
 	uint8_t intPin=getLastInterruptPin();
 	if(intPin!=MCP23017_INT_ERR){
