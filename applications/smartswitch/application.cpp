@@ -47,12 +47,15 @@ unsigned long btn_last_up [BTN_COUNT] = {0UL};
 // millis of the last btn down
 unsigned long btn_last_down [BTN_COUNT] = {0UL};
 
+unsigned long last_interrupt = 0UL;
+
 // Interrupts from the MCP will be handled by this PIN
 byte SparkIntPIN = D3;
 
 volatile int pressCount = 0;
 
 volatile boolean inInterrupt = false;
+volatile boolean doubleWait = false;
 
 volatile int lastLedAction = 0;
 
@@ -169,69 +172,83 @@ int ledControlRGB(String command) {
     return -1;
 }
 
-void handleButtonINT() {
-    noInterrupts();
-    inInterrupt = true;
-
+void handleButtonINT() {    
+       noInterrupts();
+       inInterrupt = true;
 }
 
 void processButtonINT() {
-
-    uint8_t pin = mcp.getLastInterruptPin();
-    uint8_t val = mcp.getLastInterruptPinValue();
-
-#ifdef SERIAL_DEBUG
-    Serial.println("Interrupt detected!");
-    Serial.println(pin);
-    Serial.println(val);
+  
+  unsigned long now = millis();
+  
+  if (doubleWait && ((now - btn_last_up[0]) >= BTN_T_DOUBLE)) {
+    t_btn_event _btn_event;
+    _btn_event.btn = 0;
+    _btn_event.event = BTN_SINGLE;
+    btn_event_queue.push(_btn_event);
+    
+#ifdef SERIAL_DEBUG    
+    Serial.println("Single");
 #endif /* SERIAL_DEBUG */
 
-    pressCount = pressCount + 1;
+    doubleWait = false;
+  }
+  
+
+  // only read the mcp if we are in the interrupt
+  // if we are called from doubleWait, just jump to click interpretation
+  if (inInterrupt) {
+    
+    uint8_t pin = mcp.getLastInterruptPin();
+    uint8_t val = mcp.getLastInterruptPinValue();
     
     //this will clear the MCP interrupt
     mcp.readGPIOAB();
+    
+    pressCount = pressCount + 1;
 
-    // relevant PIN
-    // TODO check if queue has enough free space
-    if (pin >= 1 && pin <= 16) {
+#ifdef SERIAL_DEBUG
+    Serial.println("Processing button interrupt for:");
+    Serial.print("PIN: ");
+    Serial.print(pin);
+    Serial.print(" VAL: ");
+    Serial.println(val);
+#endif /* SERIAL_DEBUG */
+    
+
+    if (pin >= 0 && pin <= 15) {
         // current time, so we don't have to call millis() all the time
-        unsigned long now = millis();
         // index in array starts at zero
-        int idx = pin - 1;
-
+        //int idx = pin - 1;
+        
         // button release
         // we do not process events while the queue is full
         if (val == BTN_UP && (btn_event_queue.count() < MAX_QUEUE_LENGTH)) {
-            // hold condition
-            // if (now - btn_last_down[idx] >= BTN_T_HOLD) {
-            //                 t_btn_event _btn_event;
-            //                 _btn_event.btn = pin;
-            //                 _btn_event.event = BTN_HOLD;
-            //                 btn_event_queue.push(_btn_event);
-            //             }// double click condition
-            //else 
-            if ((now - btn_last_up[idx] < BTN_T_DOUBLE) && (now - btn_last_down[idx] < BTN_T_HOLD)) {
-                t_btn_event _btn_event;
-                _btn_event.btn = pin;
-                _btn_event.event = BTN_DOUBLE;
-                btn_event_queue.push(_btn_event);
-            }// otherwise we have seen a single click
-            else {
-                t_btn_event _btn_event;
-                _btn_event.btn = pin;
-                _btn_event.event = BTN_SINGLE;
-                btn_event_queue.push(_btn_event);
-            }
-            btn_last_up[idx] = millis();
-        }// button press	
-        else if (val == BTN_DOWN) {
-            btn_last_down[idx] = millis();
-        }// unrecognized button event
-        else {
-            //DEBUG
+          if((millis() - btn_last_up[pin]) < BTN_T_DOUBLE) {
+            t_btn_event _btn_event;
+            _btn_event.btn = pin;
+            _btn_event.event = BTN_DOUBLE;
+            btn_event_queue.push(_btn_event);
+#ifdef SERIAL_DEBUG            
+            Serial.println("Double");
+#endif /* SERIAL_DEBUG */
+            
+            doubleWait = false;
+          } else {
+            doubleWait = true;
+          }
+          btn_last_up[pin] = now;
         }
-    }
-    
+      }// button press	
+      else if (val == BTN_DOWN) {
+            btn_last_down[pin] = now;
+      }// unrecognized button event
+      else {
+        //DEBUG unexpexted VALs
+      }
+  }
+  
+
 
 }
 
@@ -348,11 +365,15 @@ void setup() {
  * main routine
  */
 void loop() {
-
-    if (inInterrupt) {
+  
+  // debouncing with 50ms
+    if (inInterrupt && (last_interrupt - millis() > 50)) {
         processButtonINT();
         inInterrupt = false;
         interrupts();
+        last_interrupt = millis();
+    } else if (doubleWait) {
+      processButtonINT();
     }
 
 #ifdef __buttonPad
@@ -371,27 +392,8 @@ void loop() {
     }
 #endif /* SERIAL DEBUG */
 
-    if (!btn_event_queue.isEmpty()) {
+   if (!btn_event_queue.isEmpty()) {
         t_btn_event _btn_event = btn_event_queue.pop();
-
-        if (_btn_event.event == BTN_SINGLE) {
-            // warten double click time
-            delay(BTN_T_DOUBLE);
-            // we waited for some time, is there something new in the queue?
-            if (!btn_event_queue.isEmpty()) {
-                t_btn_event _btn_next_event = btn_event_queue.peek();
-                // does the new event concern the same button as the current ?
-                // is is the old current event a single click ? This is necessairy so we
-                // don't throw away two following double clicks or something like that
-                if (_btn_event.btn == _btn_next_event.btn && _btn_event.event == BTN_SINGLE) {
-                    // we assume the current event was only the first part of a double click
-                    // so we skip it and replace it with the new one
-                    // the new one will be popped from the queue
-                    _btn_event = btn_event_queue.pop();
-                }
-            }
-        }
-
         // interpret the event and fire desired action
         myConfig.process(&_btn_event);
     }
