@@ -13,7 +13,7 @@ enum btn {
 };
 
 enum btn_leds {
-    BTN_LED_0 = 8, BTN_LED_1 = 9, BTN_LED_2 = 10, BTN_LED_3 = 11, BTN_LED_4 = 12, BTN_LED_5 = 13
+    BTN_LED_0 = 10, BTN_LED_1 = 11, BTN_LED_2 = 12, BTN_LED_3 = 13, BTN_LED_4 = 14, BTN_LED_5 = 15
 };
 
 // btn_event_type can be based one one button or a specific sequence

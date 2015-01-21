@@ -1,11 +1,11 @@
 #include "SmartSwitchConfig.h"
 // Dynamicly added includes
-#include "clients/SONOSClient/SONOSClient.h"
+#include "clients/HTTPGETClient/HTTPGETClient.h"
 
 
 
 // Device instantiation
-SONOSClient wohnzimmer_SONOSClient;
+HTTPGETClient raspberry_HTTPGETClient;
 
 
 
@@ -17,7 +17,8 @@ SMARTSWITCHConfig::SMARTSWITCHConfig() {
 void SMARTSWITCHConfig::setup() {
 // initialize what is needed
 // basically we call setIP() for each client device
-wohnzimmer_SONOSClient.setIP(10, 0, 6, 114);
+raspberry_HTTPGETClient.setIP(192, 168, 1, 103);
+raspberry_HTTPGETClient.setPort(80);
 }
 
 
@@ -31,10 +32,10 @@ switch(e->btn) {
        
        break;
      case BTN_SINGLE:
-       wohnzimmer_SONOSClient.toggleMute();
+       
        break;
      case BTN_DOUBLE:
-       wohnzimmer_SONOSClient.setMute(TRUE);
+       
        break;
      }
      break;
@@ -44,10 +45,10 @@ switch(e->btn) {
        
        break;
      case BTN_SINGLE:
-       wohnzimmer_SONOSClient.toggleMute();
+       
        break;
      case BTN_DOUBLE:
-       wohnzimmer_SONOSClient.setMute(TRUE);
+       
        break;
      }
      break;
@@ -57,10 +58,10 @@ switch(e->btn) {
        
        break;
      case BTN_SINGLE:
-       wohnzimmer_SONOSClient.toggleMute();
+       
        break;
      case BTN_DOUBLE:
-       wohnzimmer_SONOSClient.setMute(TRUE);
+       
        break;
      }
      break;
@@ -70,10 +71,10 @@ switch(e->btn) {
        
        break;
      case BTN_SINGLE:
-       wohnzimmer_SONOSClient.toggleMute();
+       
        break;
      case BTN_DOUBLE:
-       wohnzimmer_SONOSClient.setMute(TRUE);
+       
        break;
      }
      break;
@@ -83,10 +84,10 @@ switch(e->btn) {
        
        break;
      case BTN_SINGLE:
-       wohnzimmer_SONOSClient.toggleMute();
+       
        break;
      case BTN_DOUBLE:
-       wohnzimmer_SONOSClient.setMute(TRUE);
+       
        break;
      }
      break;
@@ -96,10 +97,36 @@ switch(e->btn) {
        
        break;
      case BTN_SINGLE:
-       wohnzimmer_SONOSClient.toggleMute();
+       raspberry_HTTPGETClient.sendRequest("/wecker/lib/powerpi.php?action=setsocket&socket=Bett%20Lampe&status=0", "");
        break;
      case BTN_DOUBLE:
-       wohnzimmer_SONOSClient.setMute(TRUE);
+       raspberry_HTTPGETClient.sendRequest("/wecker/lib/powerpi.php?action=setsocket&socket=Bett%20Lampe&status=1", "");
+       break;
+     }
+     break;
+   case BTN_6:
+   switch (e->event) {
+     case BTN_HOLD:
+       
+       break;
+     case BTN_SINGLE:
+       
+       break;
+     case BTN_DOUBLE:
+       
+       break;
+     }
+     break;
+   case BTN_7:
+   switch (e->event) {
+     case BTN_HOLD:
+       
+       break;
+     case BTN_SINGLE:
+       raspberry_HTTPGETClient.sendRequest("/wecker/lib/powerpi.php?action=setsocket&socket=Bett%20Lampe&status=0", "");
+       break;
+     case BTN_DOUBLE:
+       raspberry_HTTPGETClient.sendRequest("/wecker/lib/powerpi.php?action=setsocket&socket=Bett%20Lampe&status=1", "");
        break;
      }
      break;
