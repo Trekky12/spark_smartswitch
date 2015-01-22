@@ -36,9 +36,23 @@ SMARTSWITCHConfig myConfig;
 #define BTN_UP 0
 #define BTN_DOWN 1
 #define BTN_T_HOLD 1000
-#define BTN_T_DOUBLE 200
-#define BTN_COUNT 6
+#define BTN_T_DOUBLE 150
+
+// at the moment our doubleWait is uint8_t
+// if you want to have more buttons you have 
+// to change the size of this bitfield
+// only increasing BTN_COUNT will lead to unexpected
+// behaviour and or runtime crashes
+#define BTN_COUNT 8
+
 #define MAX_QUEUE_LENGTH 3
+
+
+
+// MACROS for the doubleWait bitfield
+#define waitFor(btn) doubleWait |= (1<<btn)
+#define dontWaitFor(btn) doubleWait &= ~(1<<btn)
+#define isWaitingFor(btn) doubleWait >> btn & 1
 
 
 // millis of the last btn up
@@ -55,7 +69,9 @@ byte SparkIntPIN = D3;
 volatile int pressCount = 0;
 
 volatile boolean inInterrupt = false;
-volatile boolean doubleWait = false;
+
+// bitfield to wait for double clicks
+volatile uint8_t doubleWait = 0;
 
 volatile int lastLedAction = 0;
 
@@ -177,21 +193,29 @@ void handleButtonINT() {
        inInterrupt = true;
 }
 
+void pushEvent(uint8_t btn, uint8_t event) {
+  t_btn_event _btn_event;
+  _btn_event.btn = btn;
+  _btn_event.event = event;
+  btn_event_queue.push(_btn_event);
+  
+  // if we detected a button single event, we can stop wating for
+  // a double click to happen on this pin
+  if (event == BTN_SINGLE)
+    dontWaitFor(btn);
+}
+
 void processButtonINT() {
   
   unsigned long now = millis();
   
-  if (doubleWait && ((now - btn_last_up[0]) >= BTN_T_DOUBLE)) {
-    t_btn_event _btn_event;
-    _btn_event.btn = 0;
-    _btn_event.event = BTN_SINGLE;
-    btn_event_queue.push(_btn_event);
+  if (doubleWait > 0) {
+    unsigned short currBtn = 0;
     
-#ifdef SERIAL_DEBUG    
-    Serial.println("Single");
-#endif /* SERIAL_DEBUG */
-
-    doubleWait = false;
+    for(currBtn = 0; currBtn < BTN_COUNT; currBtn ++) {
+      if (isWaitingFor(currBtn) && ((now - btn_last_up[currBtn]) >= BTN_T_DOUBLE))
+        pushEvent(currBtn, BTN_SINGLE);
+    }
   }
   
 
@@ -216,26 +240,22 @@ void processButtonINT() {
 #endif /* SERIAL_DEBUG */
     
 
-    if (pin >= 0 && pin <= 15) {
+    if (pin >= 0 && pin < BTN_COUNT) {
         // current time, so we don't have to call millis() all the time
-        // index in array starts at zero
-        //int idx = pin - 1;
-        
         // button release
         // we do not process events while the queue is full
         if (val == BTN_UP && (btn_event_queue.count() < MAX_QUEUE_LENGTH)) {
           if((millis() - btn_last_up[pin]) < BTN_T_DOUBLE) {
-            t_btn_event _btn_event;
-            _btn_event.btn = pin;
-            _btn_event.event = BTN_DOUBLE;
-            btn_event_queue.push(_btn_event);
-#ifdef SERIAL_DEBUG            
+
+            pushEvent(pin, BTN_DOUBLE);
+            dontWaitFor(pin);
+
+#ifdef SERIAL_DEBUG
             Serial.println("Double");
 #endif /* SERIAL_DEBUG */
-            
-            doubleWait = false;
+
           } else {
-            doubleWait = true;
+            waitFor(pin);
           }
           btn_last_up[pin] = now;
         }
@@ -247,9 +267,6 @@ void processButtonINT() {
         //DEBUG unexpexted VALs
       }
   }
-  
-
-
 }
 
 void setup() {
@@ -383,7 +400,6 @@ void loop() {
     }
 #endif /* __buttonPad */
     
-
 #ifdef SERIAL_DEBUG
     if (pressCount > 50) {
         Serial.println("50 interrupts...");
