@@ -1,8 +1,11 @@
 // define whetere we are a buttonPad or behind a gira
-#define __buttonPad
-//#define __gira
+//#define __buttonPad
+#define __gira
 
-//#include "spark_wiring.h"
+// // // // // // // // // // // // // // // // // // // // //
+//
+// Includes
+//
 
 // hardware libraries
 #include "lib/WS2812B.h"
@@ -22,20 +25,37 @@ This mode gives you a lot of rope to hang yourself with, so tread cautiously. */
 WS2812B leds;
 #endif /* buttonPad */
 
+// // // // // // // // // // // // // // // // // // // // //
+//
+// Defines for Debugging
+//
 
 // to debug via serial console uncomment the following line:
 #define SERIAL_DEBUG
+
+// to make the spark wait for [ENTER]
+// on the serial console after booting
+// #define SERIAL_WAIT
 
 // these defines can be used for finer granularity 
 // of the debug output
 #define INTERRUPT_DEBUG 
 
+
+// // // // // // // // // // // // // // // // // // // // //
+//
+// Global instances
+//
+
 Adafruit_MCP23017 mcp;
-
 IntervalTimer myTimer;
-
 SMARTSWITCHConfig myConfig;
 
+
+// // // // // // // // // // // // // // // // // // // // //
+//
+// Defines and constants 
+//
 
 #define BTN_UP 0
 #define BTN_DOWN 1
@@ -57,12 +77,17 @@ SMARTSWITCHConfig myConfig;
 #define isWaitingFor(btn) doubleWait >> btn & 1
 
 
+
+// // // // // // // // // // // // // // // // // // // // //
+//
+// Globals
+//
+
 // millis of the last btn up
 unsigned long btn_last_up [BTN_COUNT] = {0UL};
 
 // millis of the last btn down
 unsigned long btn_last_down [BTN_COUNT] = {0UL};
-
 
 // Debounce 
 unsigned long last_interrupt = 0UL;
@@ -85,6 +110,7 @@ volatile int lastLedAction = 0;
 // create a queue of t_btn_events.
 QueueList <t_btn_event> btn_event_queue;
 
+#ifdef __buttonPad
 void stopLEDs() {
     leds.setColor(0, 0, 0, 0);
     leds.setColor(1, 0, 0, 0);
@@ -93,6 +119,7 @@ void stopLEDs() {
     leds.show();
     lastLedAction = 0;
 }
+#endif /* __buttonPad */
 
 
 // This function gets called whenever there is a matching API request
@@ -100,28 +127,21 @@ void stopLEDs() {
 // for example: 1,HIGH or 1,LOW
 //              2,HIGH or 2,LOW
 
+#ifdef __gira
 int ledControl(String command) {
 
     int state = 0;
     int mcpPin = -1;
-    int ledNumber = -1;
-    char * params = new char[command.length() + 1];
-
-    strcpy(params, command.c_str());
-    char * param1 = strtok(params, ",");
-    char * param2 = strtok(NULL, ",");
-
-
-    if (param1 != NULL && param2 != NULL) {
-        ledNumber = atoi(param1);
-
+  	// conversion of ascii to integer
+    int ledNumber = command.charAt(0) - '0';
+        
         /* Check for a valid digital pin */
         if (ledNumber < 0 || ledNumber > 5) return -1;
-
-        /* find out the state of the led */
-        if (!strcmp(param1, "HIGH")) state = 1;
-        else if (!strcmp(param1, "LOW")) state = 0;
-        else return -1;
+        
+        // parse the state from the given command
+      	if(command.substring(2,5) == "LOW") state = 0;
+      	else if(command.substring(2,6) == "HIGH") state = 1;
+      	else return -2;
 
         // write to the appropriate pin on the mcp
         switch (ledNumber) {
@@ -143,20 +163,28 @@ int ledControl(String command) {
             case 5:
                 mcpPin = BTN_LED_5;
                 break;
-        }
+                 }
         if (mcpPin >= 0) {
-            mcp.digitalWrite(mcpPin, state);
-            return 0;
+          
+        #ifdef SERIAL_DEBUG
+          Serial.print("Setting LED ");
+          Serial.print(mcpPin);
+          Serial.print(" to: ");
+          Serial.println(state);
+        #endif /* SERIAL_DEBUG */
+          
+          mcp.digitalWrite(mcpPin, state);
+          return 0;
         }
-    }
+    // failure
     return -1;
 }
-
+#endif /* __gira */
 
 // This function gets called whenever there is a matching API request
 // the command string format is <led number>,<Red>,<Green>,<Blue>
 // for example: 1,000,000,000
-
+#ifdef __buttonPad
 int ledControlRGB(String command) {
 
     int ledNumber = -1;
@@ -186,14 +214,15 @@ int ledControlRGB(String command) {
         if (red < 0 || red > 255) return -1;
         if (blue < 0 || blue > 255) return -1;
         if (green < 0 || green > 255) return -1;
-
         leds.setColor(ledNumber, red, green, blue);
         leds.show();
+
         lastLedAction = millis();
         return 0;
     }
     return -1;
 }
+#endif /* __buttonPad */
 
 void handleButtonINT() {
     noInterrupts();
@@ -297,13 +326,14 @@ void setup() {
 
     delay(1000);
 
-#ifdef SERIAL_DEBUG
+    #ifdef SERIAL_DEBUG
     Serial.begin(9600);
-
+    #ifdef SERIAL_WAIT
     while (!Serial.available()) { // Wait here until the user presses ENTER 
         SPARK_WLAN_Loop(); // in the Serial Terminal. Call the BG Tasks
     }
-#endif /* SERIAL_DEBUG */
+    #endif /* SERIAL_WAIT */
+    #endif /* SERIAL_DEBUG */
 
     // connect to the WiFi
     WiFi.connect();
@@ -314,12 +344,17 @@ void setup() {
     myConfig.setup();
 
     //Register our Spark function here
+    #ifdef __gira
     Spark.function("led", ledControl);
+    #endif
+
+    #ifdef __buttonPad
     Spark.function("ledrgb", ledControlRGB);
+    #endif /* __buttonPad */
 
     pinMode(SparkIntPIN, INPUT);
 
-#ifdef __buttonPad
+    #ifdef __buttonPad
     leds.setup(4);
     leds.setColor(0, 255, 255, 0);
     leds.setColor(1, 0, 255, 0);
@@ -327,7 +362,7 @@ void setup() {
     leds.setColor(3, 255, 0, 0);
     leds.show();
     lastLedAction = millis();
-#endif /* __buttonPad */
+    #endif /* __buttonPad */
 
 
     mcp.begin(); // use default address 0
@@ -356,7 +391,7 @@ void setup() {
     mcp.pinMode(BTN_7, INPUT);
     mcp.pullUp(BTN_7, HIGH);
 
-#ifdef __gira
+    #ifdef __gira
     mcp.pinMode(BTN_LED_0, OUTPUT);
     mcp.pinMode(BTN_LED_1, OUTPUT);
     mcp.pinMode(BTN_LED_2, OUTPUT);
@@ -364,14 +399,13 @@ void setup() {
     mcp.pinMode(BTN_LED_4, OUTPUT);
     mcp.pinMode(BTN_LED_5, OUTPUT);
 
-    mcp.digitalWrite(BTN_LED_0, HIGH);
-    mcp.digitalWrite(BTN_LED_1, HIGH);
-    mcp.digitalWrite(BTN_LED_2, HIGH);
-    mcp.digitalWrite(BTN_LED_3, HIGH);
-    mcp.digitalWrite(BTN_LED_4, HIGH);
-    mcp.digitalWrite(BTN_LED_5, HIGH);
-
-#endif /* __gira */   
+    mcp.digitalWrite(BTN_LED_0, LOW);
+    mcp.digitalWrite(BTN_LED_1, LOW);
+    mcp.digitalWrite(BTN_LED_2, LOW);
+    mcp.digitalWrite(BTN_LED_3, LOW);
+    mcp.digitalWrite(BTN_LED_4, LOW);
+    mcp.digitalWrite(BTN_LED_5, LOW);
+    #endif /* __gira */   
 
     // AUTO allocate printQcount to run every 1000ms (2000 * .5ms period)
     // myTimer.begin(printQcount, 3000, hmSec);
@@ -381,8 +415,10 @@ void setup() {
     // it seems not to interfere with our use case, but we don't need it 
     // so it is set to false
     mcp.setupInterrupts(false, false, LOW);
-    // TODO only initialize interrupts needed ?
+
+    //   TODO: 
     //      source out to SMARTSWITCHConfig.setup() ?
+    
     mcp.setupInterruptPin(BTN_0, CHANGE);
     mcp.setupInterruptPin(BTN_1, CHANGE);
     mcp.setupInterruptPin(BTN_2, CHANGE);
