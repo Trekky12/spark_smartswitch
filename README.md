@@ -1,10 +1,14 @@
 # SmartSwitch
-The SmartSwitch is a input device for (local) network components realized with a [Spark.io Core ](https://www.spark.io/) application.
+The SmartSwitch is a input device for (local) network components realized with a [Spark.io Core ](https://www.spark.io/)<sup>1</sup> application.
 
 
-The switch can be used to submit HTTP requests on the local network. This makes it possible to control a variety of devices. Also we provide a library to control [SONOS](http://www.sonos.com/) speakers.
+The switch can be used to submit HTTP requests on the local network. This makes it possible to control a variety of devices. Also we provide a library to control [SONOS](http://www.sonos.com/) speakers<sup>1</sup>.
 
-Also you can use the switch with [IFTTT](http://ifttt.com), refer to our wiki. This enables the switch to control lots of internet enabled devices, refer to IFTTT for a complete list of possibilities.
+Also you can use the switch with [IFTTT](http://ifttt.com)<sup>1</sup>, refer to our wiki. This enables the switch to control lots of internet enabled devices, refer to IFTTT for a complete list of possibilities.
+
+
+
+<sup>1</sup>we are not associated with Spark, SONOS or IFTTT in any form. We are just two students making their homes a bit smarter
 
 ## Hardware
 * [Spark.io Core ](https://www.spark.io/)
@@ -29,12 +33,6 @@ The LEDs can be controled by the [Spark.IO Cloud API](http://docs.spark.io/api/)
 
         curl https://api.spark.io/v1/devices/<device_id>/led -d access_token=<access_token> -d "args=<LEDNumber>,<HIGH or LOW>"
 
-
-## Usage
-
-For detailed information on how to setup and use it refer to our Wiki: [Smart Switch Wiki](https://github.com/phhe/spark_smartswitch/wiki)
-
-
 ## Software modules
 Initial there are modules for the following network devices:
 * SONOS
@@ -50,6 +48,8 @@ Initial there are modules for the following network devices:
 ### Create own Module
 It is possible to create a own module to connect the Buttons to.
 
+
+## [[Configuration|Configuration]]
 
 # SmartSwitch PCB
 Eagle Files are available at [https://github.com/Trekky12/SmartSwitchPCB](https://github.com/Trekky12/SmartSwitchPCB)
