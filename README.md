@@ -27,7 +27,7 @@ The LEDs can be controled by the [Spark.IO Cloud API](http://docs.spark.io/api/)
 
 ## Usage
 
-For detailed information on how to setup and use it refer to our Wiki: [[Smart Switch Wiki|https://github.com/phhe/spark_smartswitch/wiki]]
+For detailed information on how to setup and use it refer to our Wiki: [Smart Switch Wiki](https://github.com/phhe/spark_smartswitch/wiki)
 
 
 ## Software modules
