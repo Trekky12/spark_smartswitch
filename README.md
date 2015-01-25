@@ -8,7 +8,9 @@ Also you can use the switch with [IFTTT](http://ifttt.com)<sup>1</sup>, refer to
 
 
 
-<sup>1</sup>we are not associated with Spark, SONOS or IFTTT in any form. We are just two students making their homes a bit smarter
+
+
+<sup>1</sup><small>we are not associated with Spark, SONOS or IFTTT in any form. We are just two students making their homes a bit smarter</small>
 
 ## Hardware
 * [Spark.io Core ](https://www.spark.io/)
