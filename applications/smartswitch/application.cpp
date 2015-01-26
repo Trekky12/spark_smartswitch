@@ -1,6 +1,6 @@
 // define whetere we are a buttonPad or behind a gira
-//#define __buttonPad
-#define __gira
+#define __buttonPad
+//#define __gira
 
 // // // // // // // // // // // // // // // // // // // // //
 //
@@ -60,7 +60,7 @@ SMARTSWITCHConfig myConfig;
 #define BTN_UP 0
 #define BTN_DOWN 1
 #define BTN_T_HOLD 1000
-#define BTN_T_DOUBLE 200
+#define BTN_T_DOUBLE 250
 
 // at the moment our doubleWait is uint8_t
 // if you want to have more buttons you have 
@@ -92,7 +92,7 @@ unsigned long btn_last_down [BTN_COUNT] = {0UL};
 // Debounce 
 unsigned long last_interrupt = 0UL;
 
-#define DEBOUNCE_DELAY 100
+#define DEBOUNCE_DELAY 20
 
 // Interrupts from the MCP will be handled by this PIN
 byte SparkIntPIN = D3;
@@ -111,6 +111,7 @@ volatile int lastLedAction = 0;
 QueueList <t_btn_event> btn_event_queue;
 
 #ifdef __buttonPad
+
 void stopLEDs() {
     leds.setColor(0, 0, 0, 0);
     leds.setColor(1, 0, 0, 0);
@@ -128,63 +129,65 @@ void stopLEDs() {
 //              2,HIGH or 2,LOW
 
 #ifdef __gira
+
 int ledControl(String command) {
 
     int state = 0;
     int mcpPin = -1;
-  	// conversion of ascii to integer
+    // conversion of ascii to integer
     int ledNumber = command.charAt(0) - '0';
-        
-        /* Check for a valid digital pin */
-        if (ledNumber < 0 || ledNumber > 5) return -1;
-        
-        // parse the state from the given command
-      	if(command.substring(2,5) == "LOW") state = 0;
-      	else if(command.substring(2,6) == "HIGH") state = 1;
-      	else return -2;
 
-        // write to the appropriate pin on the mcp
-        switch (ledNumber) {
-            case 0:
-                mcpPin = BTN_LED_0;
-                break;
-            case 1:
-                mcpPin = BTN_LED_1;
-                break;
-            case 2:
-                mcpPin = BTN_LED_2;
-                break;
-            case 3:
-                mcpPin = BTN_LED_3;
-                break;
-            case 4:
-                mcpPin = BTN_LED_4;
-                break;
-            case 5:
-                mcpPin = BTN_LED_5;
-                break;
-                 }
-        if (mcpPin >= 0) {
-          
-        #ifdef SERIAL_DEBUG
-          Serial.print("Setting LED ");
-          Serial.print(mcpPin);
-          Serial.print(" to: ");
-          Serial.println(state);
-        #endif /* SERIAL_DEBUG */
-          
-          mcp.digitalWrite(mcpPin, state);
-          return 0;
-        }
+    /* Check for a valid digital pin */
+    if (ledNumber < 0 || ledNumber > 5) return -1;
+
+    // parse the state from the given command
+    if (command.substring(2, 5) == "LOW") state = 0;
+    else if (command.substring(2, 6) == "HIGH") state = 1;
+    else return -2;
+
+    // write to the appropriate pin on the mcp
+    switch (ledNumber) {
+        case 0:
+            mcpPin = BTN_LED_0;
+            break;
+        case 1:
+            mcpPin = BTN_LED_1;
+            break;
+        case 2:
+            mcpPin = BTN_LED_2;
+            break;
+        case 3:
+            mcpPin = BTN_LED_3;
+            break;
+        case 4:
+            mcpPin = BTN_LED_4;
+            break;
+        case 5:
+            mcpPin = BTN_LED_5;
+            break;
+    }
+    if (mcpPin >= 0) {
+
+#ifdef SERIAL_DEBUG
+        Serial.print("Setting LED ");
+        Serial.print(mcpPin);
+        Serial.print(" to: ");
+        Serial.println(state);
+#endif /* SERIAL_DEBUG */
+
+        mcp.digitalWrite(mcpPin, state);
+        return 0;
+    }
     // failure
     return -1;
 }
 #endif /* __gira */
 
+
+#ifdef __buttonPad
 // This function gets called whenever there is a matching API request
 // the command string format is <led number>,<Red>,<Green>,<Blue>
 // for example: 1,000,000,000
-#ifdef __buttonPad
 int ledControlRGB(String command) {
 
     int ledNumber = -1;
@@ -208,13 +211,92 @@ int ledControlRGB(String command) {
         if (ledNumber < 0 || ledNumber > 4) return -1;
 
         red = atoi(param2);
-        blue = atoi(param3);
-        green = atoi(param4);
+        green = atoi(param3);
+        blue = atoi(param4);
 
         if (red < 0 || red > 255) return -1;
-        if (blue < 0 || blue > 255) return -1;
         if (green < 0 || green > 255) return -1;
+        if (blue < 0 || blue > 255) return -1;
         leds.setColor(ledNumber, red, green, blue);
+        leds.show();
+
+        lastLedAction = millis();
+        return 0;
+    }
+    return -1;
+}
+
+
+// This function gets called whenever there is a matching API request
+// the command string format is 
+// <LED1_Red>,<LED1_Green>,<LED1_Blue>,
+// <LED2_Red>,<LED2_Green>,<LED2_Blue>, 
+// <LED3_Red>,<LED3_Green>,<LED3_Blue>, 
+// <LED4_Red>,<LED4_Green>,<LED4_Blue>
+// for example: 000,000,000,000,000,000,000,000,000,000,000,000
+int ledControlAllRGB(String command) {
+
+    int red1, red2, red3, red4 = 0;
+    int blue1, blue2, blue3, blue4 = 0;
+    int green1, green2, green3, green4 = 0;
+
+    char * params = new char[command.length() + 1];
+
+    strcpy(params, command.c_str());
+    char * param1 = strtok(params, ",");
+    char * param2 = strtok(NULL, ",");
+    char * param3 = strtok(NULL, ",");
+    char * param4 = strtok(NULL, ",");
+    char * param5 = strtok(NULL, ",");
+    char * param6 = strtok(NULL, ",");
+    char * param7 = strtok(NULL, ",");
+    char * param8 = strtok(NULL, ",");
+    char * param9 = strtok(NULL, ",");
+    char * param10 = strtok(NULL, ",");
+    char * param11 = strtok(NULL, ",");
+    char * param12 = strtok(NULL, ",");
+
+
+    if (param1 != NULL && param2 != NULL && param3 != NULL && param4 != NULL
+             && param5 != NULL  && param6 != NULL  && param7 != NULL  && param8 != NULL
+             && param9 != NULL  && param10 != NULL  && param11 != NULL  && param12 != NULL) {
+
+        red1 = atoi(param1);
+        green1 = atoi(param2);
+        blue1 = atoi(param3);
+        
+        red2 = atoi(param4);
+        green2 = atoi(param5);
+        blue2 = atoi(param6);
+        
+        red3 = atoi(param7);
+        green3 = atoi(param8);
+        blue3 = atoi(param9);
+        
+        red4 = atoi(param10);
+        green4 = atoi(param11);
+        blue4 = atoi(param12);
+
+        if (red1 < 0 || red1 > 255) return -1;
+        if (green1 < 0 || green1 > 255) return -1;
+        if (blue1 < 0 || blue1 > 255) return -1;
+        
+        if (red2 < 0 || red2 > 255) return -1;
+        if (green2 < 0 || green2 > 255) return -1;
+        if (blue2 < 0 || blue2 > 255) return -1;
+        
+        if (red3 < 0 || red3 > 255) return -1;
+        if (green3 < 0 || green3 > 255) return -1;
+        if (blue3 < 0 || blue3 > 255) return -1;
+        
+        if (red4 < 0 || red4 > 255) return -1;
+        if (green4 < 0 || green4 > 255) return -1;
+        if (blue4 < 0 || blue4 > 255) return -1;
+        
+        leds.setColor(0, red1, green1, blue1);
+        leds.setColor(1, red2, green2, blue2);
+        leds.setColor(2, red3, green3, blue3);
+        leds.setColor(3, red4, green4, blue4);
         leds.show();
 
         lastLedAction = millis();
@@ -252,7 +334,9 @@ void processSingleClicks() {
     for (currBtn = 0; currBtn < BTN_COUNT; currBtn++) {
         if (isWaitingFor(currBtn) && ((now - btn_last_up[currBtn]) >= BTN_T_DOUBLE)) {
             pushEvent(currBtn, BTN_SINGLE);
+#ifdef SERIAL_DEBUG
             Serial.println("Single");
+#endif /* SERIAL_DEBUG */
         }
     }
 
@@ -304,7 +388,9 @@ void processButtonINT() {
                     // last up is farer in the past than BTN_T_DOUBLE,
                     // this might become a double click, but we don't know
                     // so we just wait
+#ifdef SERIAL_DEBUG
                     Serial.println("wait for pin");
+#endif /* SERIAL_DEBUG */
                     waitFor(pin);
                 }
                 btn_last_up[pin] = now;
@@ -315,8 +401,8 @@ void processButtonINT() {
                 //DEBUG unexpexted VALs
             }
         }
-    }
-
+    } 
+    
     //this will clear the MCP interrupt
     mcp.readGPIOAB();
 
@@ -326,14 +412,14 @@ void setup() {
 
     delay(1000);
 
-    #ifdef SERIAL_DEBUG
+#ifdef SERIAL_DEBUG
     Serial.begin(9600);
-    #ifdef SERIAL_WAIT
+#ifdef SERIAL_WAIT
     while (!Serial.available()) { // Wait here until the user presses ENTER 
         SPARK_WLAN_Loop(); // in the Serial Terminal. Call the BG Tasks
     }
-    #endif /* SERIAL_WAIT */
-    #endif /* SERIAL_DEBUG */
+#endif /* SERIAL_WAIT */
+#endif /* SERIAL_DEBUG */
 
     // connect to the WiFi
     WiFi.connect();
@@ -344,17 +430,18 @@ void setup() {
     myConfig.setup();
 
     //Register our Spark function here
-    #ifdef __gira
+#ifdef __gira
     Spark.function("led", ledControl);
-    #endif
+#endif
 
-    #ifdef __buttonPad
+#ifdef __buttonPad
     Spark.function("ledrgb", ledControlRGB);
-    #endif /* __buttonPad */
+    Spark.function("ledrgball", ledControlAllRGB);
+#endif /* __buttonPad */
 
     pinMode(SparkIntPIN, INPUT);
 
-    #ifdef __buttonPad
+#ifdef __buttonPad
     leds.setup(4);
     leds.setColor(0, 255, 255, 0);
     leds.setColor(1, 0, 255, 0);
@@ -362,7 +449,7 @@ void setup() {
     leds.setColor(3, 255, 0, 0);
     leds.show();
     lastLedAction = millis();
-    #endif /* __buttonPad */
+#endif /* __buttonPad */
 
 
     mcp.begin(); // use default address 0
@@ -391,7 +478,7 @@ void setup() {
     mcp.pinMode(BTN_7, INPUT);
     mcp.pullUp(BTN_7, HIGH);
 
-    #ifdef __gira
+#ifdef __gira
     mcp.pinMode(BTN_LED_0, OUTPUT);
     mcp.pinMode(BTN_LED_1, OUTPUT);
     mcp.pinMode(BTN_LED_2, OUTPUT);
@@ -405,7 +492,7 @@ void setup() {
     mcp.digitalWrite(BTN_LED_3, LOW);
     mcp.digitalWrite(BTN_LED_4, LOW);
     mcp.digitalWrite(BTN_LED_5, LOW);
-    #endif /* __gira */   
+#endif /* __gira */   
 
     // AUTO allocate printQcount to run every 1000ms (2000 * .5ms period)
     // myTimer.begin(printQcount, 3000, hmSec);
@@ -418,7 +505,7 @@ void setup() {
 
     //   TODO: 
     //      source out to SMARTSWITCHConfig.setup() ?
-    
+
     mcp.setupInterruptPin(BTN_0, CHANGE);
     mcp.setupInterruptPin(BTN_1, CHANGE);
     mcp.setupInterruptPin(BTN_2, CHANGE);
