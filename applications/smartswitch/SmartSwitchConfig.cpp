@@ -1,11 +1,11 @@
 #include "SmartSwitchConfig.h"
 // Dynamicly added includes
-#include "clients/HTTPGETClient/HTTPGETClient.h"
+#include "clients/SONOSClient/SONOSClient.h"
 
 
 
 // Device instantiation
-HTTPGETClient raspberry_HTTPGETClient;
+SONOSClient wohnzimmer_SONOSClient;
 
 
 
@@ -17,8 +17,7 @@ SMARTSWITCHConfig::SMARTSWITCHConfig() {
 void SMARTSWITCHConfig::setup() {
 // initialize what is needed
 // basically we call setIP() for each client device
-raspberry_HTTPGETClient.setIP(192, 168, 1, 103);
-raspberry_HTTPGETClient.setPort(80);
+wohnzimmer_SONOSClient.setIP(10, 0, 6, 114);
 }
 
 
@@ -32,9 +31,12 @@ switch(e->btn) {
        
        break;
      case BTN_SINGLE:
-       
+       wohnzimmer_SONOSClient.toggleMute();
        break;
      case BTN_DOUBLE:
+       
+       break;
+     case BTN_HOLD_CLICK:
        
        break;
      }
@@ -45,9 +47,12 @@ switch(e->btn) {
        
        break;
      case BTN_SINGLE:
-       
+       wohnzimmer_SONOSClient.toggleMute();
        break;
      case BTN_DOUBLE:
+       
+       break;
+     case BTN_HOLD_CLICK:
        
        break;
      }
@@ -58,10 +63,13 @@ switch(e->btn) {
        
        break;
      case BTN_SINGLE:
-       
+       Spark.publish("btn_pressed", "2");
        break;
      case BTN_DOUBLE:
        
+       break;
+     case BTN_HOLD_CLICK:
+       wohnzimmer_SONOSClient.toggleMute();
        break;
      }
      break;
@@ -71,22 +79,28 @@ switch(e->btn) {
        
        break;
      case BTN_SINGLE:
-       
+       Spark.publish("btn_pressed", "3");
        break;
      case BTN_DOUBLE:
        
+       break;
+     case BTN_HOLD_CLICK:
+       wohnzimmer_SONOSClient.toggleMute();
        break;
      }
      break;
    case BTN_4:
    switch (e->event) {
      case BTN_HOLD:
-       
+       wohnzimmer_SONOSClient.changeVolume(-10);
        break;
      case BTN_SINGLE:
-       
+       wohnzimmer_SONOSClient.changeVolume(-15);
        break;
      case BTN_DOUBLE:
+       wohnzimmer_SONOSClient.changeVolume(-25);
+       break;
+     case BTN_HOLD_CLICK:
        
        break;
      }
@@ -94,13 +108,16 @@ switch(e->btn) {
    case BTN_5:
    switch (e->event) {
      case BTN_HOLD:
-       
+       wohnzimmer_SONOSClient.changeVolume(10);
        break;
      case BTN_SINGLE:
-       raspberry_HTTPGETClient.sendRequest("/wecker/lib/powerpi.php?action=setsocket&socket=Bett%20Lampe&status=0", "");
+       wohnzimmer_SONOSClient.changeVolume(15);
        break;
      case BTN_DOUBLE:
-       raspberry_HTTPGETClient.sendRequest("/wecker/lib/powerpi.php?action=setsocket&socket=Bett%20Lampe&status=1", "");
+       wohnzimmer_SONOSClient.changeVolume(25);
+       break;
+     case BTN_HOLD_CLICK:
+       
        break;
      }
      break;
@@ -110,9 +127,12 @@ switch(e->btn) {
        
        break;
      case BTN_SINGLE:
-       
+       Spark.publish("btn_pressed", "6");
        break;
      case BTN_DOUBLE:
+       
+       break;
+     case BTN_HOLD_CLICK:
        
        break;
      }
@@ -123,10 +143,13 @@ switch(e->btn) {
        
        break;
      case BTN_SINGLE:
-       raspberry_HTTPGETClient.sendRequest("/wecker/lib/powerpi.php?action=setsocket&socket=Bett%20Lampe&status=0", "");
+       Spark.publish("btn_pressed", "7");
        break;
      case BTN_DOUBLE:
-       raspberry_HTTPGETClient.sendRequest("/wecker/lib/powerpi.php?action=setsocket&socket=Bett%20Lampe&status=1", "");
+       
+       break;
+     case BTN_HOLD_CLICK:
+       
        break;
      }
      break;

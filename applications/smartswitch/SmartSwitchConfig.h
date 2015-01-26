@@ -18,7 +18,7 @@ enum btn_leds {
 
 // btn_event_type can be based one one button or a specific sequence
 enum btn_event_type {
-    BTN_SINGLE, BTN_DOUBLE, BTN_HOLD
+    BTN_SINGLE, BTN_DOUBLE, BTN_HOLD_CLICK, BTN_HOLD
 };
 
 

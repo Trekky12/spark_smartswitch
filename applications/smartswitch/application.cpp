@@ -1,6 +1,6 @@
 // define whetere we are a buttonPad or behind a gira
-#define __buttonPad
-//#define __gira
+//#define __buttonPad
+#define __gira
 
 // // // // // // // // // // // // // // // // // // // // //
 //
@@ -61,6 +61,7 @@ SMARTSWITCHConfig myConfig;
 #define BTN_DOWN 1
 #define BTN_T_HOLD 1000
 #define BTN_T_DOUBLE 250
+#define BTN_T_HOLD_DEBOUNCE 250
 
 // at the moment our doubleWait is uint8_t
 // if you want to have more buttons you have 
@@ -72,9 +73,9 @@ SMARTSWITCHConfig myConfig;
 #define MAX_QUEUE_LENGTH 3
 
 // MACROS for the doubleWait bitfield
-#define waitFor(btn) doubleWait |= (1<<btn)
-#define dontWaitFor(btn) doubleWait &= ~(1<<btn)
-#define isWaitingFor(btn) doubleWait >> btn & 1
+#define waitFor(btn,var) var |= (1<<btn)
+#define dontWaitFor(btn,var) var &= ~(1<<btn)
+#define isWaitingFor(btn,var) var >> btn & 1
 
 
 
@@ -89,6 +90,10 @@ unsigned long btn_last_up [BTN_COUNT] = {0UL};
 // millis of the last btn down
 unsigned long btn_last_down [BTN_COUNT] = {0UL};
 
+// millis of the last btn hold
+unsigned long btn_last_hold [BTN_COUNT] = {0UL};
+
+
 // Debounce 
 unsigned long last_interrupt = 0UL;
 
@@ -101,8 +106,9 @@ volatile int pressCount = 0;
 
 volatile boolean inInterrupt = false;
 
-// bitfield to wait for double clicks
+// bitfield to keep track of double clicks
 volatile uint8_t doubleWait = 0;
+
 
 // shutdown leds after 10 sec
 volatile int lastLedAction = 0;
@@ -324,7 +330,7 @@ void pushEvent(uint8_t btn, uint8_t event) {
     // if we detected a button single event, we can stop wating for
     // a double click to happen on this pin
     if (event == BTN_SINGLE)
-        dontWaitFor(btn);
+        dontWaitFor(btn, doubleWait);
 }
 
 void processSingleClicks() {
@@ -332,15 +338,45 @@ void processSingleClicks() {
     unsigned long now = millis();
 
     for (currBtn = 0; currBtn < BTN_COUNT; currBtn++) {
-        if (isWaitingFor(currBtn) && ((now - btn_last_up[currBtn]) >= BTN_T_DOUBLE)) {
-            pushEvent(currBtn, BTN_SINGLE);
-#ifdef SERIAL_DEBUG
-            Serial.println("Single");
-#endif /* SERIAL_DEBUG */
-        }
+        if (isWaitingFor(currBtn,doubleWait)) {
+          // time since btn_last_up is bigger than BTN_T_DOUBLE
+          // and button is already released (last up is bigger than last down)
+          if ((now - btn_last_up[currBtn]) >= BTN_T_DOUBLE) {
+            if (btn_last_up[currBtn]<btn_last_down[currBtn]){
+              if (btn_last_hold[currBtn] < btn_last_up[currBtn]) {
+                pushEvent(currBtn, BTN_SINGLE);
+                #ifdef SERIAL_DEBUG
+                Serial.print("Single Click: ");
+                Serial.println(currBtn);
+                #endif /* SERIAL_DEBUG */
+              }
+            } else {
+                // explicitly check if button is really pressed,
+                // otherwise: if we miss the btn_up we loop here forever...
+                if(now - btn_last_hold[currBtn] >= BTN_T_HOLD_DEBOUNCE && mcp.digitalRead(currBtn) == 0) {
+                 mcp.digitalRead(currBtn) == 0;  
+                  if (btn_last_hold[currBtn] <= btn_last_down[currBtn]) {
+                    pushEvent(currBtn, BTN_HOLD_CLICK);
+                    #ifdef SERIAL_DEBUG
+                    Serial.print("Hold Click: ");
+                    Serial.println(currBtn);
+                    #endif /* SERIAL_DEBUG */
+                  }
+                  
+                  pushEvent(currBtn, BTN_HOLD);
+                  btn_last_hold[currBtn] = now;
+                  #ifdef SERIAL_DEBUG
+                  Serial.print("Hold: ");
+                  Serial.println(currBtn);
+                  #endif /* SERIAL_DEBUG */
+                }
+            }
+          }
+       }
     }
-
 }
+
+
 
 void processButtonINT() {
 
@@ -369,7 +405,6 @@ void processButtonINT() {
 
         if (pin >= 0 && pin < BTN_COUNT) {
 
-
             // current time, so we don't have to call millis() all the time
             unsigned long now = millis();
 
@@ -378,10 +413,11 @@ void processButtonINT() {
                 if ((millis() - btn_last_up[pin]) < BTN_T_DOUBLE) {
 
                     pushEvent(pin, BTN_DOUBLE);
-                    dontWaitFor(pin);
+                    dontWaitFor(pin,doubleWait);
 
 #ifdef SERIAL_DEBUG
-                    Serial.println("Double");
+                    Serial.print("Double: ");
+                    Serial.println(pin);
 #endif /* SERIAL_DEBUG */
 
                 } else {
@@ -391,11 +427,13 @@ void processButtonINT() {
 #ifdef SERIAL_DEBUG
                     Serial.println("wait for pin");
 #endif /* SERIAL_DEBUG */
-                    waitFor(pin);
+                    waitFor(pin, doubleWait);
                 }
                 btn_last_up[pin] = now;
+                
             } else if (val == BTN_DOWN) {
                 btn_last_down[pin] = now;
+                
             } else {
                 // unrecognized button event
                 //DEBUG unexpexted VALs
