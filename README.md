@@ -51,7 +51,7 @@ Initial there are modules for the following network devices:
 It is possible to create a own module to connect the Buttons to.
 
 
-## [[Configuration|Configuration]]
+## [Configuration](https://github.com/phhe/spark_smartswitch/wiki/Configuration)
 
 # SmartSwitch PCB
 Eagle Files are available at [https://github.com/Trekky12/SmartSwitchPCB](https://github.com/Trekky12/SmartSwitchPCB)
