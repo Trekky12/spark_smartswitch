@@ -1,6 +1,6 @@
 // define whetere we are a buttonPad or behind a gira
-//#define __buttonPad
-#define __gira
+#define __buttonPad
+//#define __gira
 
 // // // // // // // // // // // // // // // // // // // // //
 //
@@ -62,6 +62,7 @@ SMARTSWITCHConfig myConfig;
 #define BTN_T_HOLD 1000
 #define BTN_T_DOUBLE 250
 #define BTN_T_HOLD_DEBOUNCE 250
+#define DEBOUNCE_DELAY 20
 
 // at the moment our doubleWait is uint8_t
 // if you want to have more buttons you have 
@@ -93,36 +94,37 @@ unsigned long btn_last_down [BTN_COUNT] = {0UL};
 // millis of the last btn hold
 unsigned long btn_last_hold [BTN_COUNT] = {0UL};
 
-
 // Debounce 
 unsigned long last_interrupt = 0UL;
 
-#define DEBOUNCE_DELAY 20
-
 // Interrupts from the MCP will be handled by this PIN
 byte SparkIntPIN = D3;
-
-volatile int pressCount = 0;
 
 volatile boolean inInterrupt = false;
 
 // bitfield to keep track of double clicks
 volatile uint8_t doubleWait = 0;
 
-
-// shutdown leds after 10 sec
-volatile int lastLedAction = 0;
-
 // create a queue of t_btn_events.
 QueueList <t_btn_event> btn_event_queue;
 
 #ifdef __buttonPad
 
-void stopLEDs() {
-    leds.setColor(0, 0, 0, 0);
-    leds.setColor(1, 0, 0, 0);
-    leds.setColor(2, 0, 0, 0);
-    leds.setColor(3, 0, 0, 0);
+#define LED_TIMEOUT 10000
+#define LED_BTN_TIMEOUT 200
+// shutdown leds after 10 sec
+volatile int lastLedAction = 0;
+
+void setLEDs(
+        int red1, int green1, int blue1,
+        int red2, int green2, int blue2,
+        int red3, int green3, int blue3,
+        int red4, int green4, int blue4) {
+
+    leds.setColor(0, red1, green1, blue1);
+    leds.setColor(1, red2, green2, blue2);
+    leds.setColor(2, red3, green3, blue3);
+    leds.setColor(3, red4, green4, blue4);
     leds.show();
     lastLedAction = 0;
 }
@@ -194,6 +196,7 @@ int ledControl(String command) {
 // This function gets called whenever there is a matching API request
 // the command string format is <led number>,<Red>,<Green>,<Blue>
 // for example: 1,000,000,000
+
 int ledControlRGB(String command) {
 
     int ledNumber = -1;
@@ -240,6 +243,7 @@ int ledControlRGB(String command) {
 // <LED3_Red>,<LED3_Green>,<LED3_Blue>, 
 // <LED4_Red>,<LED4_Green>,<LED4_Blue>
 // for example: 000,000,000,000,000,000,000,000,000,000,000,000
+
 int ledControlAllRGB(String command) {
 
     int red1, red2, red3, red4 = 0;
@@ -264,21 +268,21 @@ int ledControlAllRGB(String command) {
 
 
     if (param1 != NULL && param2 != NULL && param3 != NULL && param4 != NULL
-             && param5 != NULL  && param6 != NULL  && param7 != NULL  && param8 != NULL
-             && param9 != NULL  && param10 != NULL  && param11 != NULL  && param12 != NULL) {
+            && param5 != NULL && param6 != NULL && param7 != NULL && param8 != NULL
+            && param9 != NULL && param10 != NULL && param11 != NULL && param12 != NULL) {
 
         red1 = atoi(param1);
         green1 = atoi(param2);
         blue1 = atoi(param3);
-        
+
         red2 = atoi(param4);
         green2 = atoi(param5);
         blue2 = atoi(param6);
-        
+
         red3 = atoi(param7);
         green3 = atoi(param8);
         blue3 = atoi(param9);
-        
+
         red4 = atoi(param10);
         green4 = atoi(param11);
         blue4 = atoi(param12);
@@ -286,19 +290,19 @@ int ledControlAllRGB(String command) {
         if (red1 < 0 || red1 > 255) return -1;
         if (green1 < 0 || green1 > 255) return -1;
         if (blue1 < 0 || blue1 > 255) return -1;
-        
+
         if (red2 < 0 || red2 > 255) return -1;
         if (green2 < 0 || green2 > 255) return -1;
         if (blue2 < 0 || blue2 > 255) return -1;
-        
+
         if (red3 < 0 || red3 > 255) return -1;
         if (green3 < 0 || green3 > 255) return -1;
         if (blue3 < 0 || blue3 > 255) return -1;
-        
+
         if (red4 < 0 || red4 > 255) return -1;
         if (green4 < 0 || green4 > 255) return -1;
         if (blue4 < 0 || blue4 > 255) return -1;
-        
+
         leds.setColor(0, red1, green1, blue1);
         leds.setColor(1, red2, green2, blue2);
         leds.setColor(2, red3, green3, blue3);
@@ -338,45 +342,42 @@ void processSingleClicks() {
     unsigned long now = millis();
 
     for (currBtn = 0; currBtn < BTN_COUNT; currBtn++) {
-        if (isWaitingFor(currBtn,doubleWait)) {
-          // time since btn_last_up is bigger than BTN_T_DOUBLE
-          // and button is already released (last up is bigger than last down)
-          if ((now - btn_last_up[currBtn]) >= BTN_T_DOUBLE) {
-            if (btn_last_up[currBtn]<btn_last_down[currBtn]){
-              if (btn_last_hold[currBtn] < btn_last_up[currBtn]) {
-                pushEvent(currBtn, BTN_SINGLE);
-                #ifdef SERIAL_DEBUG
-                Serial.print("Single Click: ");
-                Serial.println(currBtn);
-                #endif /* SERIAL_DEBUG */
-              }
-            } else {
-                // explicitly check if button is really pressed,
-                // otherwise: if we miss the btn_up we loop here forever...
-                if(now - btn_last_hold[currBtn] >= BTN_T_HOLD_DEBOUNCE && mcp.digitalRead(currBtn) == 0) {
-                 mcp.digitalRead(currBtn) == 0;  
-                  if (btn_last_hold[currBtn] <= btn_last_down[currBtn]) {
-                    pushEvent(currBtn, BTN_HOLD_CLICK);
-                    #ifdef SERIAL_DEBUG
-                    Serial.print("Hold Click: ");
-                    Serial.println(currBtn);
-                    #endif /* SERIAL_DEBUG */
-                  }
-                  
-                  pushEvent(currBtn, BTN_HOLD);
-                  btn_last_hold[currBtn] = now;
-                  #ifdef SERIAL_DEBUG
-                  Serial.print("Hold: ");
-                  Serial.println(currBtn);
-                  #endif /* SERIAL_DEBUG */
+        if (isWaitingFor(currBtn, doubleWait)) {
+            // time since btn_last_up is bigger than BTN_T_DOUBLE
+            // and button is already released (last up is bigger than last down)
+            if ((now - btn_last_up[currBtn]) >= BTN_T_DOUBLE) {
+                if (btn_last_up[currBtn] < btn_last_down[currBtn]) {
+                    if (btn_last_hold[currBtn] < btn_last_up[currBtn]) {
+                        pushEvent(currBtn, BTN_SINGLE);
+#ifdef SERIAL_DEBUG
+                        Serial.print("Single Click: ");
+                        Serial.println(currBtn);
+#endif /* SERIAL_DEBUG */
+                    }
+                } else {
+                    // explicitly check if button is really pressed,
+                    // otherwise: if we miss the btn_up we loop here forever...
+                    if (now - btn_last_hold[currBtn] >= BTN_T_HOLD_DEBOUNCE && mcp.digitalRead(currBtn) == 0) {
+                        if (btn_last_hold[currBtn] <= btn_last_down[currBtn]) {
+                            pushEvent(currBtn, BTN_HOLD_CLICK);
+#ifdef SERIAL_DEBUG
+                            Serial.print("Hold Click: ");
+                            Serial.println(currBtn);
+#endif /* SERIAL_DEBUG */
+                        }
+
+                        pushEvent(currBtn, BTN_HOLD);
+                        btn_last_hold[currBtn] = now;
+#ifdef SERIAL_DEBUG
+                        Serial.print("Hold: ");
+                        Serial.println(currBtn);
+#endif /* SERIAL_DEBUG */
+                    }
                 }
             }
-          }
-       }
+        }
     }
 }
-
-
 
 void processButtonINT() {
 
@@ -387,9 +388,6 @@ void processButtonINT() {
 
         uint8_t pin = mcp.getLastInterruptPin();
         uint8_t val = mcp.getLastInterruptPinValue();
-
-
-        pressCount = pressCount + 1;
 
 #ifdef SERIAL_DEBUG
 #ifdef INTERRUPT_DEBUG
@@ -413,7 +411,7 @@ void processButtonINT() {
                 if ((millis() - btn_last_up[pin]) < BTN_T_DOUBLE) {
 
                     pushEvent(pin, BTN_DOUBLE);
-                    dontWaitFor(pin,doubleWait);
+                    dontWaitFor(pin, doubleWait);
 
 #ifdef SERIAL_DEBUG
                     Serial.print("Double: ");
@@ -430,17 +428,17 @@ void processButtonINT() {
                     waitFor(pin, doubleWait);
                 }
                 btn_last_up[pin] = now;
-                
+
             } else if (val == BTN_DOWN) {
                 btn_last_down[pin] = now;
-                
+
             } else {
                 // unrecognized button event
                 //DEBUG unexpexted VALs
             }
         }
-    } 
-    
+    }
+
     //this will clear the MCP interrupt
     mcp.readGPIOAB();
 
@@ -581,23 +579,46 @@ void loop() {
     }
 
 #ifdef __buttonPad
-    /* stop LEDs after 10 seconds */
-    if (lastLedAction > 0 && millis() - lastLedAction > 10000) {
-        stopLEDs();
+    /* stop LEDs after LED_TIMEOUT seconds */
+    if (lastLedAction > 0 && millis() - lastLedAction > LED_TIMEOUT) {
+        setLEDs(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    }
+
+    /* Disable LED when there is no WiFi */
+    if (!WiFi.ready()) {
+        RGB.control(true);
+        RGB.brightness(0);
+    }
+    if (WiFi.ready() && RGB.controlled()) {
+        RGB.brightness(255);
+        RGB.control(false);
     }
 #endif /* __buttonPad */
 
-#ifdef SERIAL_DEBUG
-    if (pressCount > 50) {
-        Serial.println("50 interrupts...");
-        Serial.println(pressCount);
-        pressCount = 0;
-    }
-#endif /* SERIAL DEBUG */
 
     if (!btn_event_queue.isEmpty()) {
         t_btn_event _btn_event = btn_event_queue.pop();
         // interpret the event and fire desired action
+
+#ifdef __buttonPad
+        /* Set LED Color after Button Press */
+        switch (_btn_event.btn) {
+            case BTN_4:
+                leds.setColor(2, 0, 0, 255);
+                break;
+            case BTN_5:
+                leds.setColor(3, 255, 0, 0);
+                break;
+            case BTN_6:
+                leds.setColor(1, 0, 255, 0);
+                break;
+            case BTN_7:
+                leds.setColor(0, 255, 255, 0);
+                break;
+        }
+        leds.show();
+        lastLedAction = (millis() - LED_TIMEOUT) + LED_BTN_TIMEOUT;
+#endif /* __buttonPad */
         myConfig.process(&_btn_event);
     }
 
