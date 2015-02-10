@@ -31,7 +31,7 @@ WS2812B leds;
 //
 
 // to debug via serial console uncomment the following line:
-#define SERIAL_DEBUG
+//#define SERIAL_DEBUG
 
 // to make the spark wait for [ENTER]
 // on the serial console after booting
@@ -39,7 +39,7 @@ WS2812B leds;
 
 // these defines can be used for finer granularity 
 // of the debug output
-#define INTERRUPT_DEBUG 
+//#define INTERRUPT_DEBUG 
 
 
 // // // // // // // // // // // // // // // // // // // // //
@@ -63,6 +63,10 @@ SMARTSWITCHConfig myConfig;
 #define BTN_T_DOUBLE 250
 #define BTN_T_HOLD_DEBOUNCE 250
 #define DEBOUNCE_DELAY 20
+
+/* Disable LED when there is no WiFi */
+#define WLAN_DISABLE_RGB
+#define BUTTONPAD_LED_FEEDBACK
 
 // at the moment our doubleWait is uint8_t
 // if you want to have more buttons you have 
@@ -112,6 +116,8 @@ QueueList <t_btn_event> btn_event_queue;
 
 #define LED_TIMEOUT 10000
 #define LED_BTN_TIMEOUT 200
+
+#define 
 // shutdown leds after 10 sec
 volatile int lastLedAction = 0;
 
@@ -371,6 +377,10 @@ void processSingleClicks() {
 #ifdef SERIAL_DEBUG
                         Serial.print("Hold: ");
                         Serial.println(currBtn);
+                        Serial.println(mcp.digitalRead(currBtn));
+                        Serial.println(now);
+                        Serial.println(btn_last_hold[currBtn]);
+
 #endif /* SERIAL_DEBUG */
                     }
                 }
@@ -583,8 +593,9 @@ void loop() {
     if (lastLedAction > 0 && millis() - lastLedAction > LED_TIMEOUT) {
         setLEDs(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     }
+#endif /* __buttonPad */
 
-    /* Disable LED when there is no WiFi */
+#ifdef WLAN_DISABLE_RGB
     if (!WiFi.ready()) {
         RGB.control(true);
         RGB.brightness(0);
@@ -593,7 +604,7 @@ void loop() {
         RGB.brightness(255);
         RGB.control(false);
     }
-#endif /* __buttonPad */
+#endif /* WLAN_DISABLE_RGB */
 
 
     if (!btn_event_queue.isEmpty()) {
@@ -601,23 +612,25 @@ void loop() {
         // interpret the event and fire desired action
 
 #ifdef __buttonPad
-        /* Set LED Color after Button Press */
-        switch (_btn_event.btn) {
-            case BTN_4:
-                leds.setColor(2, 0, 0, 255);
-                break;
-            case BTN_5:
-                leds.setColor(3, 255, 0, 0);
-                break;
-            case BTN_6:
-                leds.setColor(1, 0, 255, 0);
-                break;
-            case BTN_7:
-                leds.setColor(0, 255, 255, 0);
-                break;
-        }
-        leds.show();
-        lastLedAction = (millis() - LED_TIMEOUT) + LED_BTN_TIMEOUT;
+    #ifdef BUTTONPAD_LED_FEEDBACK        
+            /* Set LED Color after Button Press */
+            switch (_btn_event.btn) {
+                case BTN_4:
+                    leds.setColor(2, 0, 0, 255);
+                    break;
+                case BTN_5:
+                    leds.setColor(3, 255, 0, 0);
+                    break;
+                case BTN_6:
+                    leds.setColor(1, 0, 255, 0);
+                    break;
+                case BTN_7:
+                    leds.setColor(0, 255, 255, 0);
+                    break;
+            }
+            leds.show();
+            lastLedAction = (millis() - LED_TIMEOUT) + LED_BTN_TIMEOUT;
+    #endif /* BUTTONPAD_LED_FEEDBACK */        
 #endif /* __buttonPad */
         myConfig.process(&_btn_event);
     }
