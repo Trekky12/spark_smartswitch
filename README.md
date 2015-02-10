@@ -6,7 +6,7 @@ The switch can be used to submit HTTP requests on the local network. This makes 
 
 Also you can use the switch with [IFTTT](http://ifttt.com)<sup>1</sup>, refer to our wiki. This enables the switch to control lots of internet enabled devices, refer to IFTTT for a complete list of possibilities.
 
-You can find our project on hackster.io at [www.hackster.io/hdm/smartswitch](www.hackster.io/hdm/smartswitch).
+You can find our project on [hackster.io](http://www.hackster.io) at [www.hackster.io/hdm/smartswitch](http://www.hackster.io/hdm/smartswitch).
 
 
 
