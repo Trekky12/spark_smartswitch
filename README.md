@@ -13,58 +13,6 @@ You can find our project on [hackster.io](http://www.hackster.io) at [www.hackst
 
 ## Hardware
 
+The SmartSwitch has been designed for two Use Cases: A mobile, flexible Version with soft buttons and a wall version to be integrated below light switches in your home. The Mobile versions housing is a custom, laser cut design and the wall version is based on a GIRA System 55 actuator. You find more details in our wiki.
+
 ![smartswitch hardware versions](https://raw.githubusercontent.com/wiki/phhe/spark_smartswitch/images/hardware.png)
-
-* 1	×	[Spark.io Core ](https://www.spark.io/)
-  * [Documentation](https://docs.spark.io)
-* 1	×	[MCP23017 I2C I/0 Expander](http://www.microchip.com/wwwproducts/Devices.aspx?product=MCP23017)
-  * [Datasheet](http://ww1.microchip.com/downloads/en/DeviceDoc/21952b.pdf)
-* 2 ×	4,7K Ohm Resistor
-  * I2C Pullup on Spark
-* For the SmartSwitch with the Button Pad
-  * 1 ×	[Button Pad Silicon Rubber](https://www.sparkfun.com/products/7836)
-  * 4 ×	WS2812B LEDs
-    * [Datasheet] (http://www.adafruit.com/datasheets/WS2812B.pdf)
-* Gira Buttons
-  * [GIRA Buttons Panel](http://katalog.gira.de/de_DE/datenblatt.html?id=571789)
-  * 6 ×	3K Ohm Resistor
-    * for the LEDs                
-
-## Functionality
-The Button are triggered with single click, double click or holding.
-
-The LEDs can be controled by the [Spark.IO Cloud API](http://docs.spark.io/api/).
-
-* WS2812B LEDs:
-
-        curl https://api.spark.io/v1/devices/<device_id>/ledrgb -d access_token=<access_token> -d "args=<LEDNumber>,<RED Value>,<GREEN Value>,<BLUE Value>"
-        
-        curl https://api.spark.io/v1/devices/<device_id>/ledrgball -d access_token=<access_token> -d "args=<LED1_Red>,<LED1_Green>,<LED1_Blue>,<LED2_Red>,<LED2_Green>,<LED2_Blue>,<LED3_Red>,<LED3_Green>,<LED3_Blue>,<LED4_Red>,<LED4_Green>,<LED4_Blue>"
-        
-* normal LEDs: 
-
-        curl https://api.spark.io/v1/devices/<device_id>/led -d access_token=<access_token> -d "args=<LEDNumber>,<HIGH or LOW>"
-
-## Software modules
-Initial there are modules for the following network devices:
-* SONOS
-  * Mute Control
-  * Volume Control
-* RaspberryPi/local Webserver
-  * send Request to server
-  * read Request from server
- 
-In progress:
-* Philips Hue
-  * On/Off
-  * Dimm  
-
-### Create own Module
-It is possible to create a own module to connect the Buttons to.
-
-
-## [Configuration](https://github.com/phhe/spark_smartswitch/wiki/Configuration)
-
-# SmartSwitch PCB
-Eagle Files are available at [https://github.com/Trekky12/SmartSwitchPCB](https://github.com/Trekky12/SmartSwitchPCB)
-![](https://raw.githubusercontent.com/Trekky12/SmartSwitchPCB/master/SmartSwitch.png)
