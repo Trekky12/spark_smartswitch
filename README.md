@@ -16,3 +16,4 @@ You can find our project on [hackster.io](http://www.hackster.io) at [www.hackst
 The SmartSwitch has been designed for two Use Cases: A mobile, flexible Version with soft buttons and a wall version to be integrated below light switches in your home. The Mobile versions housing is a custom, laser cut design and the wall version is based on a GIRA System 55 actuator. You find more details in our wiki.
 
 ![smartswitch hardware versions](https://raw.githubusercontent.com/wiki/phhe/spark_smartswitch/images/hardware.png)
+![smartswitch hardware images](https://raw.githubusercontent.com/wiki/phhe/spark_smartswitch/images/smartswitch_images.png)
