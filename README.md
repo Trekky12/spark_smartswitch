@@ -8,7 +8,6 @@ Also you can use the switch with [IFTTT](http://ifttt.com)<sup>1</sup>, refer to
 
 You can find our project on [hackster.io](http://www.hackster.io) at [www.hackster.io/hdm/smartswitch](http://www.hackster.io/hdm/smartswitch).
 
-![smartswitch control flow](https://raw.githubusercontent.com/wiki/phhe/spark_smartswitch/images/control.png)
 
 <sup>1</sup><small>we are not associated with Spark, SONOS or IFTTT in any form. We are just two students making their homes a bit smarter</small>
 
