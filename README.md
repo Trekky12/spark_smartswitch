@@ -14,7 +14,7 @@ You can find our project on [hackster.io](http://www.hackster.io) at [www.hackst
 
 ## Hardware
 
-![smartswitch hardware versions](images/hardware.png)
+![smartswitch hardware versions](https://raw.githubusercontent.com/wiki/phhe/spark_smartswitch/images/hardware.png)
 
 * 1	×	[Spark.io Core ](https://www.spark.io/)
   * [Documentation](https://docs.spark.io)
