@@ -1,5 +1,5 @@
 # SmartSwitch
-The SmartSwitch is a input device for (local) network components realized with a [Spark.io Core ](https://www.spark.io/)<sup>1</sup> application.
+The SmartSwitch is a input device for (local) network components realized with a [Spark.io Core ](https://www.spark.io/)<sup>1</sup> application. For further details on this project refer to our wiki here on github: [SmartSwitch WIKI](https://github.com/phhe/spark_smartswitch/wiki)
 
 
 The switch can be used to submit HTTP requests on the local network. This makes it possible to control a variety of devices. Also we provide a library to control [SONOS](http://www.sonos.com/) speakers<sup>1</sup>.
