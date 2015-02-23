@@ -117,7 +117,6 @@ QueueList <t_btn_event> btn_event_queue;
 #define LED_TIMEOUT 10000
 #define LED_BTN_TIMEOUT 200
 
-#define 
 // shutdown leds after 10 sec
 volatile int lastLedAction = 0;
 
