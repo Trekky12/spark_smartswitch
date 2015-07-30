@@ -1,0 +1,63 @@
+{
+    "devices": {
+         "test_HTTPGETClient": {"IP": "192.168.1.103", "Port": "80"}
+    },
+    "btns": {
+        "BTN_0": {
+          "BTN_SINGLE": "",
+          "BTN_DOUBLE": "",
+          "BTN_HOLD_CLICK": "",
+          "BTN_HOLD": "",
+          "LED_FEEDBACK" : ""
+        },
+        "BTN_1": {
+          "BTN_SINGLE": "",
+          "BTN_DOUBLE": "",
+          "BTN_HOLD_CLICK": "",
+          "BTN_HOLD": "",
+          "LED_FEEDBACK" : ""
+        },
+        "BTN_2": {
+          "BTN_SINGLE": "",
+          "BTN_DOUBLE": "",
+          "BTN_HOLD_CLICK": "",
+          "BTN_HOLD": "",
+          "LED_FEEDBACK" : ""
+        },
+        "BTN_3": {
+          "BTN_SINGLE": "Spark.publish(\"btn_pressed\", \"3\");",
+          "BTN_DOUBLE": "",
+          "BTN_HOLD_CLICK": "",
+          "BTN_HOLD": "",
+          "LED_FEEDBACK" : "(0,0,255)"
+        },
+        "BTN_4": {
+          "BTN_SINGLE": "test_HTTPGETClient.sendRequest(\"test1.php\", \"\");",
+          "BTN_DOUBLE": "",
+          "BTN_HOLD_CLICK": "",
+          "BTN_HOLD": "",
+          "LED_FEEDBACK" : "(255,0,0)"
+        },
+        "BTN_5": {
+          "BTN_SINGLE": "test_HTTPGETClient.sendRequest(\"test2.php\", \"\");",
+          "BTN_DOUBLE": "",
+          "BTN_HOLD_CLICK": "",
+          "BTN_HOLD": "",
+          "LED_FEEDBACK" : "(255,255,255)"
+        },
+        "BTN_6": {
+          "BTN_SINGLE": "Spark.publish(\"btn_pressed\", \"6\");",
+          "BTN_DOUBLE": "",
+          "BTN_HOLD_CLICK": "",
+          "BTN_HOLD": "",
+          "LED_FEEDBACK" : "(255,255,0)"
+        },
+        "BTN_7": {
+          "BTN_SINGLE": "Spark.publish(\"btn_pressed\", \"7\");",
+          "BTN_DOUBLE": "",
+          "BTN_HOLD_CLICK": "",
+          "BTN_HOLD": "",
+          "LED_FEEDBACK" : "(0,255,255)"
+        }
+    }
+}

@@ -12,6 +12,13 @@ You can find our project on [hackster.io](http://www.hackster.io) at [www.hackst
 
 <sup>1</sup><small>we are not associated with Spark, SONOS or IFTTT in any form. We are just two students making their homes a bit smarter</small>
 
+## Config File
+Please execute 
+
+```python create_config.py > SmartSwitchConfig.cpp```
+
+after changing the config file
+
 ## Hardware
 
 The SmartSwitch has been designed for two Use Cases: A mobile, flexible Version with soft buttons and a wall version to be integrated below light switches in your home. The Mobile versions housing is a custom, laser cut design and the wall version is based on a GIRA System 55 actuator. You find more details in our wiki.
