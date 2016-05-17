@@ -27,7 +27,7 @@ void HTTPGETClient::setPort(unsigned short port) {
 
 void HTTPGETClient::sendRequest(const char *url, const char *message) {
   
-    myHttpClient.makeRequest(1, /* type, 1 = POST */
+    myHttpClient.makeRequest(0, /* type, 1 = POST, 0 = GET */
                       url, /* URL */
                       hostip, /* host */
                       hostport,  /* port */
