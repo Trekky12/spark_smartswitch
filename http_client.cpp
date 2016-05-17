@@ -97,6 +97,13 @@ int HTTPClient::makeRequest(unsigned short type,
   snprintf(smallbuffer, 85, "HOST: %d.%d.%d.%d:%d\r\n", host[0], host[1], host[2], host[3], port);
   strcat(mainbuffer, smallbuffer);
   memset(&smallbuffer, 0, sizeof(smallbuffer));
+  
+    
+  // optionally add the userHeader1  
+  if (strlen(userHeader1)>0){
+    strcat(mainbuffer, userHeader1);
+    strcat(mainbuffer,  "\r\n");    
+  }
     
   // add content length to the header
   snprintf(smallbuffer, 85, "CONTENT-LENGTH: %d\r\n" , strlen(content));
@@ -107,12 +114,7 @@ int HTTPClient::makeRequest(unsigned short type,
   snprintf(smallbuffer, 85, "CONTENT-TYPE: %s\r\n" , contentType);
   strcat(mainbuffer, smallbuffer);
   memset(&smallbuffer, 0, sizeof(smallbuffer));
-  
-  // optionally add the userHeader1  
-  if (strlen(userHeader1)>0){
-    strcat(mainbuffer, userHeader1);
-    strcat(mainbuffer,  "\r\n");    
-  }
+
 
   // optionally add the userHeader2
   if (strlen(userHeader2)>0){
